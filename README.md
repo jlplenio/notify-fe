@@ -1,4 +1,4 @@
-# Geforce Gazer v0.1
+# Notify-FE v0.1
 
 Available here [https://notify-fe.vercel.app/](https://notify-fe.vercel.app/)
 
