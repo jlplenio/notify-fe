@@ -10,8 +10,8 @@ export default function Component({ gpuCards }: { gpuCards: GpuCard[] }) {
                     <TableRow>
                         <TableHead>Item</TableHead>
                         <TableHead className="text-center">Stock Availability</TableHead>
-                        <TableHead>Shop Link</TableHead>
-                        <TableHead>Nvidia Link</TableHead>
+                        <TableHead className="text-center">Shop Link</TableHead>
+                        <TableHead className="text-center">Nvidia Link</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>

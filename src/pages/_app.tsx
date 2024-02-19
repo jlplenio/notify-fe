@@ -7,7 +7,7 @@ const MyApp: AppType = ({ Component, pageProps }) => {
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="dark"
+      defaultTheme="system"
       enableSystem
       disableTransitionOnChange
     >

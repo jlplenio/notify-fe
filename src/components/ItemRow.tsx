@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { TableCell, TableRow } from './ui/table';
 import { Badge } from './ui/badge';
-import { ShoppingBag, ShoppingBasket, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import type { GpuCard } from './types/gpuInterface';
 import { playSound } from './Beeper';
 
@@ -17,20 +17,20 @@ function ItemRow({ gpuCard }: { gpuCard: GpuCard }) {
 
   return (
     <TableRow>
-      <TableCell>{gpuCard.name}</TableCell>
-      <TableCell className="text-center">
-        <Badge className={`h-6 w-6 ${gpuCard.available ? 'bg-green-500' : 'bg-red-500'}`} variant="outline" />
+      <TableCell className='align-middle'>{gpuCard.name}</TableCell>
+      <TableCell className="text-center justify-center">
+        <Badge className={`align-middle h-6 w-6 ${gpuCard.available ? 'bg-green-500' : 'bg-red-500'}`} variant="outline" />
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="text-center justify-center">
         {gpuCard.available && (
-          <a href={gpuCard.product_url ?? ""} target="_blank" rel="noopener noreferrer" className="inline-flex">
+          <a href={gpuCard.product_url ?? ""} target="_blank" rel="noopener noreferrer" className="align-middle inline-flex">
             <ShoppingCart size={24} color="currentColor" />
           </a>
         )}
       </TableCell>
       <TableCell className="text-center">
         {gpuCard.available && (
-          <a href={nvidiaBaseUrl ?? ""} target="_blank" rel="noopener noreferrer" className="inline-flex">
+          <a href={nvidiaBaseUrl ?? ""} target="_blank" rel="noopener noreferrer" className="inline-flex align-middle">
             <ShoppingCart size={24} color="currentColor" />
           </a>
         )}

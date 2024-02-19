@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from '~/components/ui/switch';
 import { Label } from '~/components/ui/label';
 import { ModeToggle } from '~/components/ThemeToggle';
+import Image from 'next/image'
 
 
 function Home(): JSX.Element {
@@ -58,9 +59,9 @@ function Home(): JSX.Element {
   };
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center">
       <div className="border-b border-l border-r shadow-lg rounded-b-2xl p-5 w-full max-w-lg">
-        <h2 className="text-2xl font-bold text-center mb-4">Geforce Gazer v0.2</h2>
+        <h1 className="text-2xl font-bold text-center mb-5">Notify-FE v0.1</h1>
         <div className="text-center mb-4">
           <div className="grid grid-cols-2 gap-4 justify-items-center items-center">
             {!isActive ? (
@@ -106,6 +107,10 @@ function Home(): JSX.Element {
         </div>
       </div>
       <Analytics />
+      <div className='mt-5'>
+        <a href='https://ko-fi.com/R6R6GVS9E' target='_blank'>
+          <Image src='https://storage.ko-fi.com/cdn/kofi6.png?v=3' alt='Buy Me a Coffee at ko-fi.com' height={22} width={160} /></a>
+      </div>
     </div >
   );
 };
