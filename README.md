@@ -2,7 +2,7 @@
 
 Available here [https://notify-fe.vercel.app/](https://notify-fe.vercel.app/)
 
-Geforce Gazer is a web application designed to help users monitor and get notifications on the availability of NVIDIA GeForce __Founders Edition__ GPUs across various regions. It provides frequent updates, region selection, and audio notifications to alert users as soon as their desired GPU becomes available.
+Notify-Fe is a web application designed to help users monitor and get notifications on the availability of NVIDIA GeForce __Founders Edition__ GPUs across various regions. It provides frequent updates, region selection, and audio notifications to alert users as soon as their desired GPU becomes available.
 
 ## Monitored Cards
 - NVIDIA GeForce RTX 4090 FE
