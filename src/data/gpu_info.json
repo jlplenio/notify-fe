@@ -1,7 +1,8 @@
 [
     {
         "name": "4090",
-        "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=NVGFT490&",
+        "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=NVGFT490",
+        "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=5750917900",
         "available": false,
         "last_seen": null,
         "product_url": null,
@@ -10,6 +11,7 @@
     {
         "name": "4080S",
         "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=NVGFT480S",
+        "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=5845716300",
         "available": false,
         "last_seen": null,
         "product_url": null,
@@ -18,6 +20,7 @@
     {
         "name": "4070S",
         "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=NVGFT470S",
+        "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=5845716400",
         "available": false,
         "last_seen": null,
         "product_url": null,

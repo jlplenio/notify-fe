@@ -61,7 +61,7 @@ function Home(): JSX.Element {
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="border-b border-l border-r shadow-lg rounded-b-2xl p-5 w-full max-w-lg">
-        <h1 className="text-2xl font-bold text-center mb-5">Notify-FE v0.1</h1>
+        <h1 className="text-2xl font-bold text-center mb-5">Notify-FE v0.2</h1>
         <div className="text-center mb-4">
           <div className="grid grid-cols-2 gap-4 justify-items-center items-center">
             {!isActive ? (

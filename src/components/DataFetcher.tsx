@@ -31,7 +31,8 @@ function useFetchGpuAvailability(initialGpuCards: GpuCard[], selectedRegion: str
 
       try {
         const promises = initialGpuCards.map(async (card) => {
-          const completeUrl = `${card.api_url}&locale=${selectedRegion}`;
+          const card_url = selectedRegion === "en-us" ? card.api_url_us : card.api_url;
+          const completeUrl = `${card_url}&locale=${selectedRegion}`;
           const response = await axios.get<ApiResponse>(completeUrl /*,{
             headers: {
               "Accept-Language": "de,en-US;q=0.7,en;q=0.3",
