@@ -61,7 +61,7 @@ function Home(): JSX.Element {
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="border-b border-l border-r shadow-lg rounded-b-2xl p-5 w-full max-w-lg">
-        <h1 className="text-2xl font-bold text-center mb-5">Notify-FE v0.2</h1>
+        <h1 className="text-2xl font-bold text-center mb-5">Notify-FE v0.3</h1>
         <div className="text-center mb-4">
           <div className="grid grid-cols-2 gap-4 justify-items-center items-center">
             {!isActive ? (
@@ -110,6 +110,10 @@ function Home(): JSX.Element {
       <div className='mt-5'>
         <a href='https://ko-fi.com/R6R6GVS9E' target='_blank'>
           <Image src='https://storage.ko-fi.com/cdn/kofi6.png?v=3' alt='Buy Me a Coffee at ko-fi.com' height={22} width={160} /></a>
+      </div>
+      <div className='mt-2.5'>
+        <a href='https://github.com/jlplenio/notify-fe' target='_blank' rel="noopener noreferrer">
+          <Image src='/GitHub-Mark-32px.png' alt='GitHub Mark' height={22} width={32} /></a>
       </div>
     </div >
   );
