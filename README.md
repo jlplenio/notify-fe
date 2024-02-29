@@ -1,4 +1,4 @@
-# Notify-FE v0.3
+# Notify-FE v0.4
 
 Available here [https://notify-fe.vercel.app/](https://notify-fe.vercel.app/)
 
@@ -15,7 +15,6 @@ Notify-FE is a web application designed to help users monitor and get notificati
 - **Frequent Availability Updates**: Refreshes GPU availability every few seconds.
 - **Region Selection**: Allows users to select their region for personalized availability.
 - **Dark Mode**: Supports dark mode for a user-friendly experience at all hours.
-- **Browser Notifications (SoonTM)**: Notifies users directly in their browser when a GPU becomes available.
 
 
 ## Disclaimer

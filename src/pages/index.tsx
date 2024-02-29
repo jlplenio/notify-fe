@@ -5,12 +5,14 @@ import initialGpuCards from '~/data/gpu_info.json';
 import localeInfo from '~/data/locale_info.json';
 import ItemTable from '~/components/ItemTable';
 import { PlayCircleIcon, StopCircle } from 'lucide-react';
+import { InfoCircledIcon } from "@radix-ui/react-icons" // good icons
 import { Button } from '~/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from '~/components/ui/switch';
 import { Label } from '~/components/ui/label';
 import { ModeToggle } from '~/components/ThemeToggle';
 import Image from 'next/image'
+import { InfoButton } from '~/components/Info';
 
 
 function Home(): JSX.Element {
@@ -61,7 +63,7 @@ function Home(): JSX.Element {
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="border-b border-l border-r shadow-lg rounded-b-2xl p-5 w-full max-w-lg">
-        <h1 className="text-2xl font-bold text-center mb-5">Notify-FE v0.3</h1>
+        <h1 className="text-2xl font-bold text-center mb-5">Notify-FE v0.4</h1>
         <div className="text-center mb-4">
           <div className="grid grid-cols-2 gap-4 justify-items-center items-center">
             {!isActive ? (
@@ -82,8 +84,11 @@ function Home(): JSX.Element {
         </div>
         {error ? <p>Error: {error.message}</p> : null}
         <ItemTable gpuCards={gpuCards} />
-        <div className="grid grid-rows-2">
-          <div className="grid grid-cols-1 justify-items-center items-center mt-5">
+        <div className="grid grid-cols-3 gap-3 mt-7">
+          <div className="flex justify-start items-center">
+            <InfoButton />
+          </div>
+          <div className="flex justify-center items-center">
             <Select value={selectedRegion} onValueChange={setSelectedRegion}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Region" />
@@ -95,14 +100,8 @@ function Home(): JSX.Element {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex justify-between items-center mt-5">
-            <div className="flex items-center">
-              <Switch disabled id="airplane-mode" />
-              <Label htmlFor="airplane-mode" className="ml-2">Browser Notification</Label>
-            </div>
-            <div>
-              <ModeToggle />
-            </div>
+          <div className="flex justify-end items-center">
+            <ModeToggle />
           </div>
         </div>
       </div>
@@ -111,9 +110,9 @@ function Home(): JSX.Element {
         <a href='https://ko-fi.com/R6R6GVS9E' target='_blank'>
           <Image src='https://storage.ko-fi.com/cdn/kofi6.png?v=3' alt='Buy Me a Coffee at ko-fi.com' height={22} width={160} /></a>
       </div>
-      <div className='mt-2.5'>
+      <div className='mt-3'>
         <a href='https://github.com/jlplenio/notify-fe' target='_blank' rel="noopener noreferrer">
-          <Image src='/GitHub-Mark-32px.png' alt='GitHub Mark' height={22} width={32} /></a>
+          <Image className='dark:invert' src='/github_logo.svg' alt='GitHub Mark' height={22} width={32} /></a>
       </div>
     </div >
   );

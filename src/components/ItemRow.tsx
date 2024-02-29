@@ -23,7 +23,7 @@ function ItemRow({ gpuCard }: { gpuCard: GpuCard }) {
       </TableCell>
       <TableCell className="text-center justify-center">
         {gpuCard.available && (
-          <a href={gpuCard.product_url ?? ""} target="_blank" rel="noopener noreferrer" className="align-middle inline-flex">
+          <a href={gpuCard.product_url ? gpuCard.product_url : nvidiaBaseUrl} target="_blank" rel="noopener noreferrer" className="align-middle inline-flex">
             <ShoppingCart size={24} color="currentColor" />
           </a>
         )}

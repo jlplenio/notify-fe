@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { type GpuCard } from '~/components/types/gpuInterface'; // Adjust the path as necessary
+import { type GpuCard } from '~/components/types/gpuInterface';
 
 function useFetchGpuAvailability(initialGpuCards: GpuCard[], selectedRegion: string, fetchTrigger: number): [GpuCard[], boolean, Error | null] {
   const [gpuCards, setGpuCards] = useState<GpuCard[]>(initialGpuCards);
