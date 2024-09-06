@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 
 const KoFiButton = () => {
   const handleButtonClick = () => {
-    window.open("https://ko-fi.com/R6R6GVS9E", "_blank");
+    window.open("https://ko-fi.com/W7W512ZD8I", "_blank");
   };
 
   return (
