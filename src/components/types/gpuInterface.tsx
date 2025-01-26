@@ -6,6 +6,7 @@ interface GpuCard {
   available: boolean;
   last_seen: string | null;
   locale: string;
+  api_reachable?: boolean;
 }
 
 export type { GpuCard };

@@ -5,7 +5,6 @@ import initialGpuCards from "~/data/gpu_info.json";
 import localeInfo from "~/data/locale_info.json";
 import ItemTable from "~/components/ItemTable";
 import { PlayCircleIcon, StopCircle } from "lucide-react";
-import { InfoCircledIcon } from "@radix-ui/react-icons"; // good icons
 import { Button } from "~/components/ui/button";
 import {
   Select,
@@ -14,8 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "~/components/ui/switch";
-import { Label } from "~/components/ui/label";
 import { ModeToggle } from "~/components/ThemeToggle";
 import Image from "next/image";
 import { InfoButton } from "~/components/Info";
@@ -76,9 +73,16 @@ function Home(): JSX.Element {
   return (
     <div className="flex flex-col items-center justify-center">
       <div className="w-full max-w-lg rounded-b-2xl border-b border-l border-r p-5 shadow-lg">
-        <h1 className="mb-5 text-center text-2xl font-bold">
+        <h1 className="mb-3 text-center text-2xl font-bold">
           Notify-FE | notify-fe.plen.io
         </h1>
+
+        <div className="mb-4 rounded-lg bg-yellow-100 px-4 py-2 text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+          Note: 5000 series API is speculative - assumes same pattern as 4000.
+          <br />
+          The API status field helps to monitor if the endpoints come online.
+        </div>
+
         <div className="mb-4 text-center">
           <div className="grid grid-cols-2 items-center justify-items-center gap-4">
             {!isActive ? (

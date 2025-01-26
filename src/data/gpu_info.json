@@ -1,29 +1,65 @@
 [
-    {
-        "name": "4090",
-        "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=NVGFT490",
-        "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=5750917900",
-        "available": false,
-        "last_seen": null,
-        "product_url": null,
-        "locale": "to_be_set"
-    },
-    {
-        "name": "4080S",
-        "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=NVGFT480S",
-        "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=5845716300",
-        "available": false,
-        "last_seen": null,
-        "product_url": null,
-        "locale": "to_be_set-de"
-    },
-    {
-        "name": "4070S",
-        "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=NVGFT470S",
-        "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?status=1&skus=5845716400",
-        "available": false,
-        "last_seen": null,
-        "product_url": null,
-        "locale": "to_be_set"
-    }
+  {
+    "name": "5090",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT590",
+    "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=",
+    "available": false,
+    "last_seen": null,
+    "product_url": null,
+    "locale": "to_be_set"
+  },
+  {
+    "name": "5080",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT580",
+    "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=",
+    "available": false,
+    "last_seen": null,
+    "product_url": null,
+    "locale": "to_be_set"
+  },
+  {
+    "name": "5070T",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT570T",
+    "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=",
+    "available": false,
+    "last_seen": null,
+    "product_url": null,
+    "locale": "to_be_set"
+  },
+  {
+    "name": "5070",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT570",
+    "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=",
+    "available": false,
+    "last_seen": null,
+    "product_url": null,
+    "locale": "to_be_set"
+  },
+  {
+    "name": "4090",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT490",
+    "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=5750917900",
+    "available": false,
+    "last_seen": null,
+    "product_url": null,
+    "locale": "to_be_set"
+  },
+  {
+    "name": "4080S",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT480S",
+    "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=5845716300",
+    "available": false,
+    "last_seen": null,
+    "product_url": null,
+    "locale": "to_be_set-de"
+  },
+  {
+    "name": "4070S",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT470S",
+    "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=5845716400",
+    "available": false,
+    "last_seen": null,
+    "product_url": null,
+    "locale": "to_be_set"
+  }
 ]
