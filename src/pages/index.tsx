@@ -17,6 +17,7 @@ import { ModeToggle } from "~/components/ThemeToggle";
 import Image from "next/image";
 import { InfoButton } from "~/components/Info";
 import KoFiButton from "~/components/KoFiButton";
+import { playSound } from "~/components/Beeper";
 
 function Home(): JSX.Element {
   const startCountdown = 21;
@@ -66,6 +67,7 @@ function Home(): JSX.Element {
   const handleStart = () => {
     setIsActive(true);
     setHasStartedOnce(true);
+    playSound();
   };
 
   const handleStop = () => {
@@ -80,8 +82,9 @@ function Home(): JSX.Element {
         </h1>
 
         <div className="mb-4 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
-          If the API is online, let the page run in the background, wait for the
-          notification sound and click the shop link. Scalpers don&apos;t win!
+          Click Start and let it refresh. If the API is online, let the page run
+          in the background, wait for the notification sound and click the Shop
+          Link. Scalpers don&apos;t win!
         </div>
 
         <div className="mb-4 text-center">
