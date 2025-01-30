@@ -1,4 +1,4 @@
-# Notify-FE v0.5
+# Notify-FE v0.6
 
 Available here [https://notify-fe.plen.io/](https://notify-fe.plen.io/)
 
@@ -6,10 +6,10 @@ Notify-FE is a web application designed to help users monitor and get notificati
 
 ## Monitored Cards
 
-- NVIDIA GeForce RTX 5090 FE (Speculative)
-- NVIDIA GeForce RTX 5080 FE (Speculative)
-- NVIDIA GeForce RTX 5070 Ti FE (Speculative)
-- NVIDIA GeForce RTX 5070 FE (Speculative)
+- NVIDIA GeForce RTX 5090 FE
+- NVIDIA GeForce RTX 5080 FE
+- NVIDIA GeForce RTX 5070 Ti FE
+- NVIDIA GeForce RTX 5070 FE
 - NVIDIA GeForce RTX 4090 FE
 - NVIDIA GeForce RTX 4080 SUPER FE
 - NVIDIA GeForce RTX 4070 SUPER FE
