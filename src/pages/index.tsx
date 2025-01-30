@@ -77,10 +77,9 @@ function Home(): JSX.Element {
           Notify-FE | notify-fe.plen.io
         </h1>
 
-        <div className="mb-4 rounded-lg bg-yellow-100 px-4 py-2 text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
-          Note: 5000 series API is speculative - assumes same pattern as 4000.
-          <br />
-          The API status field helps to monitor if the endpoints come online.
+        <div className="mb-4 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
+          If the API is online, let the page run in the background, wait for the
+          notification sound and click the shop link. Scalpers don&apos;t win!
         </div>
 
         <div className="mb-4 text-center">

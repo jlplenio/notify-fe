@@ -20,7 +20,7 @@ const KoFiButton = () => {
           objectFit="contain"
         />
       </div>
-      <span className="pr-1">Fund Server Costs & Provide Feedback</span>
+      <span className="pr-1">You got one? 🚀 Say thanks with a coffee! </span>
     </Button>
   );
 };
