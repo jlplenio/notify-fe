@@ -29,6 +29,7 @@ function Home(): JSX.Element {
     selectedRegion,
     fetchTrigger,
   );
+  const [hasStartedOnce, setHasStartedOnce] = useState(false);
 
   // Locale detection
   useEffect(() => {
@@ -64,6 +65,7 @@ function Home(): JSX.Element {
 
   const handleStart = () => {
     setIsActive(true);
+    setHasStartedOnce(true);
   };
 
   const handleStop = () => {
@@ -87,7 +89,7 @@ function Home(): JSX.Element {
             {!isActive ? (
               <Button
                 variant="outline"
-                className="flex items-center"
+                className={`flex items-center ${!hasStartedOnce ? "border-2 border-green-400" : ""}`}
                 onClick={handleStart}
               >
                 Start <PlayCircleIcon size={19} className="ml-1" />
