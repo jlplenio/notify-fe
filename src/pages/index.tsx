@@ -81,37 +81,58 @@ function Home(): JSX.Element {
           Notify-FE | notify-fe.plen.io
         </h1>
 
-        <div className="mb-4 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
+        <div className="mb-6 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
           Click Start and let it refresh. If the API is online, let the page run
           in the background, wait for the notification sound and click the Shop
           Link. Scalpers don&apos;t win!
         </div>
 
         <div className="mb-4 text-center">
-          <div className="grid grid-cols-2 items-center justify-items-center gap-4">
-            {!isActive ? (
-              <Button
-                variant="outline"
-                className={`flex items-center ${!hasStartedOnce ? "border-2 border-green-400" : ""}`}
-                onClick={handleStart}
-              >
-                Start <PlayCircleIcon size={19} className="ml-1" />
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="flex items-center"
-                onClick={handleStop}
-              >
-                Stop <StopCircle size={19} className="ml-1" />
-              </Button>
-            )}
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">
-                {!isLoading
-                  ? `Refreshing in: 00:${countdown.toString().padStart(2, "0")}`
-                  : "Refreshing..."}
-              </p>
+          <div className="grid grid-cols-3 items-center gap-3 px-4">
+            <div className="flex justify-center">
+              <div className="w-[161px]">
+                <Select
+                  value={selectedRegion}
+                  onValueChange={setSelectedRegion}
+                >
+                  <SelectTrigger className="h-9 bg-background text-sm font-medium">
+                    <SelectValue placeholder="Select Region" />
+                  </SelectTrigger>
+                  <SelectContent className="text-sm">
+                    {Object.entries(localeInfo).map(
+                      ([countryName, countryCode]) => (
+                        <SelectItem key={countryCode} value={countryCode}>
+                          {countryName}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              {!isActive ? (
+                <Button
+                  variant="outline"
+                  className={`h-9 w-[95px] text-sm font-medium ${!hasStartedOnce ? "border-2 border-green-400" : ""}`}
+                  onClick={handleStart}
+                >
+                  Start <PlayCircleIcon size={16} className="ml-1.5" />
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="h-9 w-[95px] text-sm font-medium"
+                  onClick={handleStop}
+                >
+                  Stop <StopCircle size={16} className="ml-1.5" />
+                </Button>
+              )}
+            </div>
+            <div className="flex h-9 w-[138px] items-center justify-start rounded-md border border-input bg-background px-3 text-sm font-medium text-muted-foreground">
+              {!isLoading
+                ? `Refreshing in ${countdown.toString().padStart(2, "0")}s`
+                : "Refreshing..."}
             </div>
           </div>
         </div>
@@ -122,20 +143,7 @@ function Home(): JSX.Element {
             <InfoButton />
           </div>
           <div className="flex items-center justify-center">
-            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Region" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(localeInfo).map(
-                  ([countryName, countryCode]) => (
-                    <SelectItem key={countryCode} value={countryCode}>
-                      {countryName}
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
+            <KoFiButton />
           </div>
           <div className="flex items-center justify-end">
             <ModeToggle />
@@ -143,9 +151,6 @@ function Home(): JSX.Element {
         </div>
       </div>
       <Analytics />
-      <div className="mt-5">
-        <KoFiButton />
-      </div>
       <div className="mt-3">
         <a
           href="https://github.com/jlplenio/notify-fe"
