@@ -1,7 +1,7 @@
 [
   {
     "name": "5090",
-    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT590",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=PROGFTNV590",
     "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=",
     "available": false,
     "last_seen": null,
@@ -10,7 +10,7 @@
   },
   {
     "name": "5080",
-    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=NVGFT580",
+    "api_url": "https://api.store.nvidia.com/partner/v1/feinventory?skus=PRO580GFTNV",
     "api_url_us": "https://api.store.nvidia.com/partner/v1/feinventory?skus=",
     "available": false,
     "last_seen": null,
