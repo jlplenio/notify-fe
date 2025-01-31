@@ -34,9 +34,10 @@ function useFetchGpuAvailability(
 
       try {
         const promises = initialGpuCards.map(async (card) => {
-          // const card_url =
-          //   selectedRegion === "en-us" ? card.api_url_us : card.api_url;
-          const card_url = card.api_url;
+          let card_url = card.api_url;
+          if (selectedRegion === "de-de" && card.api_url_de) {
+            card_url = card.api_url_de;
+          }
           const completeUrl = `${card_url}&locale=${selectedRegion}`;
 
           try {
