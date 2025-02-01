@@ -5,6 +5,7 @@ import { ShoppingCart } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 import type { GpuCard } from "./types/gpuInterface";
 import { usePlaySound } from "~/components/Beeper";
+import { track } from "@vercel/analytics";
 
 interface ItemRowProps {
   gpuCard: GpuCard;
@@ -70,6 +71,12 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex align-middle"
+            onClick={() =>
+              track("Shop Link Clicked", {
+                gpuName: gpuCard.name,
+                locale: gpuCard.locale,
+              })
+            }
           >
             <ShoppingCart size={24} color="currentColor" />
           </a>
@@ -84,6 +91,12 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex align-middle"
+            onClick={() =>
+              track("NVIDIA Link Clicked", {
+                gpuName: gpuCard.name,
+                locale: gpuCard.locale,
+              })
+            }
           >
             <ShoppingCart size={24} color="currentColor" />
           </a>
