@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { type GpuCard } from "~/components/types/gpuInterface";
 
@@ -23,63 +23,84 @@ function useFetchGpuAvailability(
     }>;
   }
 
+  // API fetch: trigger only on timer (fetchTrigger) or region changes.
   useEffect(() => {
+    if (fetchTrigger === 0) {
+      // When fetchTrigger is 0, do not update; UI changes are managed separately.
+      return;
+    }
+
+    setIsLoading(true);
+
     const fetchAvailability = async () => {
-      if (fetchTrigger === 0) {
-        setGpuCards(initialGpuCards);
-        return;
-      }
+      // Use the unmodified parent cards (initialGpuCards) to drive API calls.
+      const promises = initialGpuCards.map(async (card) => {
+        if (!card.included) {
+          return card;
+        }
+        let card_url = card.api_url;
+        if (
+          ["de-de", "fi-fi", "da-dk", "nb-no", "sv-se", "nl-nl"].includes(
+            selectedRegion,
+          ) &&
+          card.api_url_de
+        ) {
+          card_url = card.api_url_de;
+        }
+        const completeUrl = `${card_url}&locale=${selectedRegion}`;
 
-      setIsLoading(true);
+        try {
+          const response = await axios.get<ApiResponse>(completeUrl);
+          const isApiReachable =
+            response.data.listMap &&
+            Array.isArray(response.data.listMap) &&
+            response.data.listMap.length > 0 &&
+            "is_active" in (response.data.listMap[0] ?? {});
 
-      try {
-        const promises = initialGpuCards.map(async (card) => {
-          let card_url = card.api_url;
-          if (["de-de", "fi-fi", "da-dk", "nb-no", "sv-se", "nl-nl"].includes(selectedRegion) && card.api_url_de) {
-            card_url = card.api_url_de;
-          }
-          const completeUrl = `${card_url}&locale=${selectedRegion}`;
+          const isActive = response.data.listMap.some(
+            (item) => item.is_active === "true",
+          );
 
-          try {
-            const response = await axios.get<ApiResponse>(completeUrl);
-            const isApiReachable =
-              response.data.listMap &&
-              Array.isArray(response.data.listMap) &&
-              response.data.listMap.length > 0 &&
-              "is_active" in (response.data.listMap[0] ?? {});
+          return {
+            ...card,
+            locale: selectedRegion,
+            product_url: response.data.listMap[0]?.product_url ?? null,
+            available: isActive,
+            last_seen: isActive ? new Date().toISOString() : card.last_seen,
+            api_reachable: isApiReachable,
+          };
+        } catch (error) {
+          return {
+            ...card,
+            locale: selectedRegion,
+            api_reachable: false,
+          };
+        }
+      });
 
-            const isActive = response.data.listMap.some(
-              (item) => item.is_active === "true",
-            );
-
-            return {
-              ...card,
-              locale: selectedRegion,
-              product_url: response.data.listMap[0]?.product_url ?? null,
-              available: isActive,
-              last_seen: isActive ? new Date().toISOString() : card.last_seen,
-              api_reachable: isApiReachable,
-            };
-          } catch (error) {
-            return {
-              ...card,
-              locale: selectedRegion,
-              api_reachable: false,
-            };
-          }
-        });
-
-        const updatedCards = await Promise.all(promises);
-        setGpuCards(updatedCards);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("An error occurred"));
-      } finally {
-        setIsLoading(false);
-      }
+      const updatedCards = await Promise.all(promises);
+      // Merge in the current "included" state from the parent (initialGpuCards)
+      const mergedCards = updatedCards.map((card) => {
+        const parentCard = initialGpuCards.find((c) => c.name === card.name);
+        return parentCard ? { ...card, included: parentCard.included } : card;
+      });
+      setGpuCards(mergedCards);
+      setIsLoading(false);
     };
 
     void fetchAvailability();
-  }, [initialGpuCards, selectedRegion, fetchTrigger]);
+  }, [selectedRegion, fetchTrigger]);
+
+  // When the parent's GPU cards change (i.e. when a checkbox is toggled),
+  // update the local state by merging the latest "included" flags.
+  useEffect(() => {
+    setGpuCards((current) =>
+      current.map((card) => {
+        const parentCard = initialGpuCards.find((c) => c.name === card.name);
+        return parentCard ? { ...card, included: parentCard.included } : card;
+      }),
+    );
+  }, [initialGpuCards]);
 
   return [gpuCards, isLoading, error];
 }

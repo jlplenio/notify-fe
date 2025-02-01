@@ -1,36 +1,52 @@
 import React, { useEffect } from "react";
-import { TableCell, TableRow } from "./ui/table";
-import { Badge } from "./ui/badge";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { ShoppingCart } from "lucide-react";
+import { Checkbox } from "./ui/checkbox";
 import type { GpuCard } from "./types/gpuInterface";
-import { playSound } from "./Beeper";
+import { playSound } from "~/components/Beeper";
 
-function ItemRow({ gpuCard }: { gpuCard: GpuCard }) {
+interface ItemRowProps {
+  gpuCard: GpuCard;
+  onToggleIncluded: (cardName: string, newValue: boolean) => void;
+}
+
+export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
   const nvidiaBaseUrl = `https://store.nvidia.com/${gpuCard.locale}/geforce/store/?page=1&limit=3&locale=${gpuCard.locale}&gpu=RTX%204090,RTX%204070%20SUPER,RTX%204080%20SUPER&manufacturer=NVIDIA`;
 
   useEffect(() => {
-    if (gpuCard.available) {
+    if (gpuCard.available && gpuCard.included) {
       console.log("GPU available:", gpuCard.name);
       playSound();
     }
-  }, [gpuCard.available, gpuCard.name]);
+  }, [gpuCard.available, gpuCard.name, gpuCard.included]);
 
   return (
     <TableRow>
-      <TableCell className="align-middle">{gpuCard.name}</TableCell>
-      <TableCell className="justify-center text-center">
+      <TableCell
+        className={`align-middle ${!gpuCard.included ? "opacity-30" : ""}`}
+      >
+        {gpuCard.name}
+      </TableCell>
+      <TableCell
+        className={`justify-center text-center ${!gpuCard.included ? "opacity-30" : ""}`}
+      >
         <Badge
           className={`h-6 w-6 align-middle ${gpuCard.api_reachable ? "bg-green-500" : "bg-red-500"}`}
           variant="outline"
         />
       </TableCell>
-      <TableCell className="justify-center text-center">
+      <TableCell
+        className={`justify-center text-center ${!gpuCard.included ? "opacity-30" : ""}`}
+      >
         <Badge
           className={`h-6 w-6 align-middle ${gpuCard.available ? "bg-green-500" : "bg-red-500"}`}
           variant="outline"
         />
       </TableCell>
-      <TableCell className="justify-center text-center">
+      <TableCell
+        className={`justify-center text-center ${!gpuCard.included ? "opacity-30" : ""}`}
+      >
         {gpuCard.available && (
           <a
             href={gpuCard.product_url ? gpuCard.product_url : nvidiaBaseUrl}
@@ -42,7 +58,9 @@ function ItemRow({ gpuCard }: { gpuCard: GpuCard }) {
           </a>
         )}
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell
+        className={`text-center ${!gpuCard.included ? "opacity-30" : ""}`}
+      >
         {gpuCard.available && (
           <a
             href={nvidiaBaseUrl ?? ""}
@@ -54,8 +72,15 @@ function ItemRow({ gpuCard }: { gpuCard: GpuCard }) {
           </a>
         )}
       </TableCell>
+      <TableCell className="text-center">
+        <Checkbox
+          checked={gpuCard.included}
+          onCheckedChange={(checked) =>
+            onToggleIncluded(gpuCard.name, checked as boolean)
+          }
+          className="h-4 w-4"
+        />
+      </TableCell>
     </TableRow>
   );
 }
-
-export default ItemRow;

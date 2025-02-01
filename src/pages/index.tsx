@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { useFetchGpuAvailability } from "~/components/DataFetcher";
-import initialGpuCards from "~/data/gpu_info.json";
+import initialGpuCardsData from "~/data/gpu_info.json";
 import localeInfo from "~/data/locale_info.json";
 import ItemTable from "~/components/ItemTable";
 import { PlayCircleIcon, StopCircle } from "lucide-react";
@@ -25,11 +25,7 @@ function Home(): JSX.Element {
   const [fetchTrigger, setFetchTrigger] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState("cz-cz");
-  const [gpuCards, isLoading, error] = useFetchGpuAvailability(
-    initialGpuCards,
-    selectedRegion,
-    fetchTrigger,
-  );
+  const [gpuCards, setGpuCards] = useState(initialGpuCardsData);
   const [hasStartedOnce, setHasStartedOnce] = useState(false);
 
   // Locale detection
@@ -73,6 +69,23 @@ function Home(): JSX.Element {
   const handleStop = () => {
     setIsActive(false);
   };
+
+  // Callback to update the "included" property for a card
+  const toggleIncluded = (cardName: string, newValue: boolean) => {
+    setGpuCards((prevCards) =>
+      prevCards.map((card) =>
+        card.name === cardName ? { ...card, included: newValue } : card,
+      ),
+    );
+  };
+
+  // Pass the updated gpuCards into the fetcher hook.
+  // When a card's included property changes, the fetcher will use this updated value.
+  const [updatedGpuCards, isLoading, error] = useFetchGpuAvailability(
+    gpuCards,
+    selectedRegion,
+    fetchTrigger,
+  );
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -129,23 +142,26 @@ function Home(): JSX.Element {
                 </Button>
               )}
             </div>
-            <div className="flex h-9 w-[138px] items-center justify-start rounded-md border border-input bg-background px-3 text-sm font-medium text-muted-foreground">
+            <div className="flex h-9 w-full items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium text-muted-foreground sm:w-[138px]">
               {!isLoading
-                ? `Refreshing in ${countdown.toString().padStart(2, "0")}s`
+                ? `Refresh in ${countdown.toString().padStart(2, "0")}s`
                 : "Refreshing..."}
             </div>
           </div>
         </div>
         {error ? <p>Error: {error.message}</p> : null}
-        <ItemTable gpuCards={gpuCards} />
+        <ItemTable
+          gpuCards={updatedGpuCards}
+          onToggleIncluded={toggleIncluded}
+        />
         <div className="mt-7 grid grid-cols-3 gap-3">
-          <div className="flex items-center justify-start">
+          <div className="flex scale-90 items-center justify-start sm:scale-100">
             <InfoButton />
           </div>
-          <div className="flex items-center justify-center">
+          <div className="flex scale-90 items-center justify-center sm:scale-100">
             <KoFiButton />
           </div>
-          <div className="flex items-center justify-end">
+          <div className="flex scale-90 items-center justify-end sm:scale-100">
             <ModeToggle />
           </div>
         </div>

@@ -8,7 +8,15 @@ import {
 import type { GpuCard } from "./types/gpuInterface";
 import ItemRow from "./ItemRow";
 
-export default function Component({ gpuCards }: { gpuCards: GpuCard[] }) {
+interface ItemTableProps {
+  gpuCards: GpuCard[];
+  onToggleIncluded: (cardName: string, newValue: boolean) => void;
+}
+
+export default function Component({
+  gpuCards,
+  onToggleIncluded,
+}: ItemTableProps) {
   return (
     <>
       <Table>
@@ -23,7 +31,11 @@ export default function Component({ gpuCards }: { gpuCards: GpuCard[] }) {
         </TableHeader>
         <TableBody>
           {gpuCards.map((gpuCard: GpuCard) => (
-            <ItemRow key={gpuCard.name} gpuCard={gpuCard} />
+            <ItemRow
+              key={gpuCard.name}
+              gpuCard={gpuCard}
+              onToggleIncluded={onToggleIncluded}
+            />
           ))}
         </TableBody>
       </Table>

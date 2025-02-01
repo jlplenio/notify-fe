@@ -8,7 +8,8 @@
     "product_url": null,
     "locale": "to_be_set",
     "last_seen": null,
-    "api_reachable": false
+    "api_reachable": false,
+    "included": true
   },
   {
     "name": "5080",
@@ -19,7 +20,8 @@
     "product_url": null,
     "locale": "to_be_set",
     "last_seen": null,
-    "api_reachable": false
+    "api_reachable": false,
+    "included": true
   },
   {
     "name": "5070T",
@@ -29,7 +31,8 @@
     "product_url": null,
     "locale": "to_be_set",
     "last_seen": null,
-    "api_reachable": false
+    "api_reachable": false,
+    "included": false
   },
   {
     "name": "5070",
@@ -39,7 +42,8 @@
     "product_url": null,
     "locale": "to_be_set",
     "last_seen": null,
-    "api_reachable": false
+    "api_reachable": false,
+    "included": false
   },
   {
     "name": "4090",
@@ -49,7 +53,8 @@
     "product_url": null,
     "locale": "to_be_set",
     "last_seen": null,
-    "api_reachable": false
+    "api_reachable": false,
+    "included": false
   },
   {
     "name": "4080S",
@@ -59,7 +64,8 @@
     "product_url": null,
     "locale": "to_be_set-de",
     "last_seen": null,
-    "api_reachable": false
+    "api_reachable": false,
+    "included": false
   },
   {
     "name": "4070S",
@@ -69,6 +75,7 @@
     "product_url": null,
     "locale": "to_be_set",
     "last_seen": null,
-    "api_reachable": false
+    "api_reachable": false,
+    "included": false
   }
 ]

@@ -8,4 +8,5 @@ export interface GpuCard {
   last_seen: string | null;
   locale: string;
   api_reachable: boolean;
+  included: boolean;
 }
