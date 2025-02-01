@@ -20,7 +20,7 @@ const KoFiButton = () => {
           objectFit="contain"
         />
       </div>
-      <span className="pr-1">Got one? 🚀 Say thanks and which country. </span>
+      <span className="pr-1">Got one? Say thanks and what country 🚀 </span>
     </Button>
   );
 };

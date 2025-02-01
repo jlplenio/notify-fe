@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 import type { GpuCard } from "./types/gpuInterface";
-import { playSound } from "~/components/Beeper";
+import { usePlaySound } from "~/components/Beeper";
 
 interface ItemRowProps {
   gpuCard: GpuCard;
@@ -12,14 +12,18 @@ interface ItemRowProps {
 }
 
 export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
-  const nvidiaBaseUrl = `https://store.nvidia.com/${gpuCard.locale}/geforce/store/?page=1&limit=3&locale=${gpuCard.locale}&gpu=RTX%204090,RTX%204070%20SUPER,RTX%204080%20SUPER&manufacturer=NVIDIA`;
+  const nvidiaBaseUrl = `https://marketplace.nvidia.com/${gpuCard.locale}/consumer/graphics-cards/?locale=${gpuCard.locale}&page=1&limit=12&manufacturer=NVIDIA`;
+  const playSound = usePlaySound();
+
+  const prevAvailableRef = useRef(gpuCard.available);
 
   useEffect(() => {
-    if (gpuCard.available && gpuCard.included) {
+    if (!prevAvailableRef.current && gpuCard.available && gpuCard.included) {
       console.log("GPU available:", gpuCard.name);
-      playSound();
+      void playSound();
     }
-  }, [gpuCard.available, gpuCard.name, gpuCard.included]);
+    prevAvailableRef.current = gpuCard.available;
+  }, [gpuCard.available, gpuCard.included, gpuCard.name, playSound]);
 
   return (
     <TableRow>
