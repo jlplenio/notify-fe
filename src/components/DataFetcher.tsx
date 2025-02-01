@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { type GpuCard } from "~/components/types/gpuInterface";
+import { getMockApiResponse } from "~/data/mock_responses";
+import { useDebug } from "~/context/DebugContext";
 
 function useFetchGpuAvailability(
   initialGpuCards: GpuCard[],
@@ -10,6 +12,9 @@ function useFetchGpuAvailability(
   const [gpuCards, setGpuCards] = useState<GpuCard[]>(initialGpuCards);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
+
+  // Get spoofingEnabled from the debug context.
+  const { spoofingEnabled } = useDebug();
 
   interface ApiResponse {
     success: boolean;
@@ -38,6 +43,25 @@ function useFetchGpuAvailability(
         if (!card.included) {
           return card;
         }
+
+        // Use spoof responses if in development and spoofing is enabled.
+        if (process.env.NODE_ENV === "development" && spoofingEnabled) {
+          const mockResponse = getMockApiResponse(card.name);
+          const isActive = mockResponse.listMap.some(
+            (item) => item.is_active === "true",
+          );
+
+          return {
+            ...card,
+            locale: selectedRegion,
+            product_url: mockResponse.listMap[0]?.product_url ?? null,
+            available: isActive,
+            last_seen: isActive ? new Date().toISOString() : card.last_seen,
+            api_reachable: true,
+            api_error: false,
+          };
+        }
+
         let card_url = card.api_url;
         if (
           // Use German (or other selected) URL when applicable.
@@ -95,7 +119,7 @@ function useFetchGpuAvailability(
     };
 
     void fetchAvailability();
-  }, [selectedRegion, fetchTrigger]);
+  }, [selectedRegion, fetchTrigger, spoofingEnabled]);
 
   // When the parent's GPU cards change (i.e. when a checkbox is toggled),
   // update the local state by merging the latest "included" flags.

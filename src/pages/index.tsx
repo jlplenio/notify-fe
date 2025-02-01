@@ -18,30 +18,16 @@ import Image from "next/image";
 import { InfoButton } from "~/components/Info";
 import KoFiButton from "~/components/KoFiButton";
 import { playSound } from "~/components/Beeper";
+import { DebugPanel } from "~/components/DebugPanel";
 
 function Home(): JSX.Element {
-  const startCountdown = 3;
+  const startCountdown = 21;
   const [countdown, setCountdown] = useState(startCountdown);
   const [fetchTrigger, setFetchTrigger] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState("cz-cz");
+  const [selectedRegion, setSelectedRegion] = useState("en-gb");
   const [gpuCards, setGpuCards] = useState(initialGpuCardsData);
   const [hasStartedOnce, setHasStartedOnce] = useState(false);
-
-  // Locale detection
-  useEffect(() => {
-    const availableLocales = Object.values(localeInfo);
-    const browserLanguage = navigator.language.toLowerCase();
-    const primaryLanguageSubtag = browserLanguage.split("-")[0];
-
-    const exactMatch = availableLocales.find(
-      (locale) => locale.toLowerCase() === browserLanguage,
-    );
-    const primarySubtagMatch = availableLocales.find((locale) =>
-      locale.toLowerCase().startsWith(primaryLanguageSubtag + "-"),
-    );
-    setSelectedRegion(exactMatch ?? primarySubtagMatch ?? "de-de");
-  }, []);
 
   // Countdown logic
   useEffect(() => {
@@ -167,6 +153,7 @@ function Home(): JSX.Element {
         </div>
       </div>
       <Analytics />
+      {process.env.NODE_ENV === "development" && <DebugPanel />}
       <div className="mt-3">
         <a
           href="https://github.com/jlplenio/notify-fe"

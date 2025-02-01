@@ -85,7 +85,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
           </a>
         )}
       </TableCell>
-      <TableCell className="flex items-center justify-center px-0 text-center">
+      <TableCell className="flex items-center justify-center px-0 py-2.5 text-center">
         <Checkbox
           checked={gpuCard.included}
           onCheckedChange={(checked) =>
