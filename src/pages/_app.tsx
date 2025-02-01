@@ -2,6 +2,7 @@ import { ThemeProvider } from "next-themes";
 import { type AppType } from "next/app";
 import Head from "next/head";
 import { DebugProvider } from "~/context/DebugContext";
+import { SoundSettingsProvider } from "~/context/SoundSettingsContext";
 
 import "~/styles/globals.css";
 
@@ -81,7 +82,9 @@ const MyApp: AppType = ({ Component, pageProps }) => {
         <link rel="canonical" href="https://notify-fe.plen.io/" />
       </Head>
       <DebugProvider>
-        <Component {...pageProps} />
+        <SoundSettingsProvider>
+          <Component {...pageProps} />
+        </SoundSettingsProvider>
       </DebugProvider>
     </ThemeProvider>
   );

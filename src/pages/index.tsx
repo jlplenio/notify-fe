@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/select";
 import { ModeToggle } from "~/components/ThemeToggle";
 import Image from "next/image";
-import { InfoButton } from "~/components/Info";
+import { SettingsButton } from "~/components/SettingsButton";
 import KoFiButton from "~/components/KoFiButton";
-import { playSound } from "~/components/Beeper";
+import { usePlaySound } from "~/components/Beeper";
 import { DebugPanel } from "~/components/DebugPanel";
 
 function Home(): JSX.Element {
@@ -28,6 +28,7 @@ function Home(): JSX.Element {
   const [selectedRegion, setSelectedRegion] = useState("en-gb");
   const [gpuCards, setGpuCards] = useState(initialGpuCardsData);
   const [hasStartedOnce, setHasStartedOnce] = useState(false);
+  const playSound = usePlaySound();
 
   // Countdown logic
   useEffect(() => {
@@ -47,9 +48,10 @@ function Home(): JSX.Element {
   }, [isActive]);
 
   const handleStart = () => {
+    setFetchTrigger((prev) => prev + 1);
     setIsActive(true);
     setHasStartedOnce(true);
-    playSound();
+    void playSound({ forceSingle: true });
   };
 
   const handleStop = () => {
@@ -142,7 +144,7 @@ function Home(): JSX.Element {
         />
         <div className="mt-7 grid grid-cols-3 gap-3">
           <div className="flex scale-90 items-center justify-start sm:scale-100">
-            <InfoButton />
+            <SettingsButton />
           </div>
           <div className="flex scale-90 items-center justify-center sm:scale-100">
             <KoFiButton />
