@@ -21,12 +21,23 @@ export default function Component({
     <>
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Item</TableHead>
-            <TableHead className="text-center">API Status</TableHead>
-            <TableHead className="text-center">In Stock</TableHead>
-            <TableHead className="text-center">Shop Link</TableHead>
-            <TableHead className="text-center">Nvidia Link</TableHead>
+          <TableRow className="">
+            <TableHead className="max-[500px]:text-[90%]">Item</TableHead>
+            <TableHead className="text-center max-[500px]:text-[90%]">
+              API Status
+            </TableHead>
+            <TableHead className="text-center max-[500px]:text-[90%]">
+              In Stock
+            </TableHead>
+            <TableHead className="text-center max-[500px]:text-[90%]">
+              Shop Link{" "}
+            </TableHead>
+            <TableHead className="text-center max-[500px]:text-[90%]">
+              Nvidia Link
+            </TableHead>
+            <TableHead className="w-[50px] text-center max-[500px]:text-[90%]">
+              🔔
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

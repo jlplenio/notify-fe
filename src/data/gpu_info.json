@@ -9,7 +9,8 @@
     "locale": "to_be_set",
     "last_seen": null,
     "api_reachable": false,
-    "included": true
+    "included": true,
+    "api_error": false
   },
   {
     "name": "5080",
@@ -21,7 +22,8 @@
     "locale": "to_be_set",
     "last_seen": null,
     "api_reachable": false,
-    "included": true
+    "included": true,
+    "api_error": false
   },
   {
     "name": "5070T",
@@ -32,7 +34,8 @@
     "locale": "to_be_set",
     "last_seen": null,
     "api_reachable": false,
-    "included": false
+    "included": false,
+    "api_error": false
   },
   {
     "name": "5070",
@@ -43,7 +46,8 @@
     "locale": "to_be_set",
     "last_seen": null,
     "api_reachable": false,
-    "included": false
+    "included": false,
+    "api_error": false
   },
   {
     "name": "4090",
@@ -54,7 +58,8 @@
     "locale": "to_be_set",
     "last_seen": null,
     "api_reachable": false,
-    "included": false
+    "included": false,
+    "api_error": false
   },
   {
     "name": "4080S",
@@ -65,7 +70,8 @@
     "locale": "to_be_set-de",
     "last_seen": null,
     "api_reachable": false,
-    "included": false
+    "included": false,
+    "api_error": false
   },
   {
     "name": "4070S",
@@ -76,6 +82,7 @@
     "locale": "to_be_set",
     "last_seen": null,
     "api_reachable": false,
-    "included": false
+    "included": false,
+    "api_error": false
   }
 ]

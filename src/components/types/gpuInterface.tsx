@@ -9,4 +9,5 @@ export interface GpuCard {
   locale: string;
   api_reachable: boolean;
   included: boolean;
+  api_error: boolean;
 }

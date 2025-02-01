@@ -32,8 +32,21 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
         className={`justify-center text-center ${!gpuCard.included ? "opacity-30" : ""}`}
       >
         <Badge
-          className={`h-6 w-6 align-middle ${gpuCard.api_reachable ? "bg-green-500" : "bg-red-500"}`}
+          className={`h-6 w-6 align-middle ${
+            gpuCard.api_error
+              ? "bg-gray-100"
+              : gpuCard.api_reachable
+                ? "bg-green-500"
+                : "bg-red-500"
+          }`}
           variant="outline"
+          title={
+            gpuCard.api_error
+              ? "API error (timeout or blocked)"
+              : gpuCard.api_reachable
+                ? "API reachable"
+                : "API unreachable"
+          }
         />
       </TableCell>
       <TableCell
@@ -72,7 +85,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
           </a>
         )}
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="flex items-center justify-center px-0 text-center">
         <Checkbox
           checked={gpuCard.included}
           onCheckedChange={(checked) =>

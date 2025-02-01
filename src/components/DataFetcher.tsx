@@ -40,6 +40,7 @@ function useFetchGpuAvailability(
         }
         let card_url = card.api_url;
         if (
+          // Use German (or other selected) URL when applicable.
           ["de-de", "fi-fi", "da-dk", "nb-no", "sv-se", "nl-nl"].includes(
             selectedRegion,
           ) &&
@@ -50,7 +51,10 @@ function useFetchGpuAvailability(
         const completeUrl = `${card_url}&locale=${selectedRegion}`;
 
         try {
-          const response = await axios.get<ApiResponse>(completeUrl);
+          const response = await axios.get<ApiResponse>(completeUrl, {
+            timeout: 3000,
+            validateStatus: (status) => status === 200,
+          });
           const isApiReachable =
             response.data.listMap &&
             Array.isArray(response.data.listMap) &&
@@ -68,12 +72,14 @@ function useFetchGpuAvailability(
             available: isActive,
             last_seen: isActive ? new Date().toISOString() : card.last_seen,
             api_reachable: isApiReachable,
+            api_error: false,
           };
         } catch (error) {
           return {
             ...card,
             locale: selectedRegion,
             api_reachable: false,
+            api_error: true,
           };
         }
       });
