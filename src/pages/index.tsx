@@ -83,7 +83,7 @@ function Home(): JSX.Element {
         </h1>
 
         <div className="mb-6 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
-          Click Start and let it refresh. If the API is online, let the page run
+          Only checks the NVIDIA store! If the API is online, let the page run
           in the background, wait for the notification sound and click the Shop
           Link. Scalpers don&apos;t win!
         </div>
