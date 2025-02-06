@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { useFetchGpuAvailability } from "~/components/DataFetcher";
 import initialGpuCardsData from "~/data/gpu_info.json";
@@ -19,9 +19,11 @@ import { SettingsButton } from "~/components/SettingsButton";
 import KoFiButton from "~/components/KoFiButton";
 import { usePlaySound } from "~/components/Beeper";
 import { DebugPanel } from "~/components/DebugPanel";
+import { useSearchParams } from 'next/navigation'
 
 function Home(): JSX.Element {
   const startCountdown = 21;
+  const searchParams = useSearchParams();
   const [countdown, setCountdown] = useState(startCountdown);
   const [fetchTrigger, setFetchTrigger] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -47,16 +49,36 @@ function Home(): JSX.Element {
     return () => clearInterval(intervalId);
   }, [isActive]);
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     setFetchTrigger((prev) => prev + 1);
     setIsActive(true);
     setHasStartedOnce(true);
     void playSound({ forceSingle: true });
-  };
+  }, [playSound]);
 
   const handleStop = () => {
     setIsActive(false);
   };
+
+  // Handle URL query parameters
+  useEffect(() => {
+    const country = searchParams.get('country');
+    const autostart = searchParams.get('autostart');
+
+    if (hasStartedOnce) {
+      return;
+    }
+
+    // Set country if valid
+    if (country && Object.values(localeInfo).includes(country)) {
+      setSelectedRegion(country);
+    }
+
+    // Auto-start if requested
+    if (autostart) {
+      handleStart();
+    }
+  }, [searchParams, handleStart, hasStartedOnce]);
 
   // Callback to update the "included" property for a card
   const toggleIncluded = (cardName: string, newValue: boolean) => {
