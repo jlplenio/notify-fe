@@ -19,16 +19,54 @@ import { SettingsButton } from "~/components/SettingsButton";
 import KoFiButton from "~/components/KoFiButton";
 import { usePlaySound } from "~/components/Beeper";
 import { DebugPanel } from "~/components/DebugPanel";
+import { useRouter } from "next/router";
+import { type GetServerSideProps } from "next";
 
-function Home(): JSX.Element {
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+  const { region } = query;
+  const validRegion =
+    typeof region === "string" && Object.values(localeInfo).includes(region)
+      ? region
+      : "en-gb";
+
+  return {
+    props: {
+      initialRegion: validRegion,
+    },
+  };
+};
+
+function Home({ initialRegion }: { initialRegion: string }): JSX.Element {
+  const router = useRouter();
   const startCountdown = 21;
   const [countdown, setCountdown] = useState(startCountdown);
   const [fetchTrigger, setFetchTrigger] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState("en-gb");
+  const [selectedRegion, setSelectedRegion] = useState(initialRegion);
   const [gpuCards, setGpuCards] = useState(initialGpuCardsData);
   const [hasStartedOnce, setHasStartedOnce] = useState(false);
   const playSound = usePlaySound();
+
+  // Handle URL query parameter
+  useEffect(() => {
+    const { region } = router.query;
+    if (typeof region === "string" && region in Object.values(localeInfo)) {
+      setSelectedRegion(region);
+    }
+  }, [router.query]);
+
+  // Update URL when region changes
+  const handleRegionChange = (newRegion: string) => {
+    void router.push(
+      {
+        pathname: router.pathname,
+        query: { ...router.query, region: newRegion },
+      },
+      undefined,
+      { shallow: true },
+    );
+    setSelectedRegion(newRegion);
+  };
 
   // Countdown logic
   useEffect(() => {
@@ -94,7 +132,7 @@ function Home(): JSX.Element {
               <div className="w-[161px]">
                 <Select
                   value={selectedRegion}
-                  onValueChange={setSelectedRegion}
+                  onValueChange={handleRegionChange}
                 >
                   <SelectTrigger className="h-9 bg-background text-sm font-medium">
                     <SelectValue placeholder="Select Region" />
