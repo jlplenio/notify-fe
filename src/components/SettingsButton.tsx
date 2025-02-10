@@ -9,9 +9,17 @@ import { useSoundSettings } from "~/context/SoundSettingsContext";
 import { usePlaySound } from "./Beeper";
 import { GearIcon, SpeakerLoudIcon, BellIcon } from "@radix-ui/react-icons";
 import { useRouter } from "next/router";
+import { Switch } from "@/components/ui/switch";
 
 export function SettingsButton() {
-  const { volume, repetitions, setVolume, setRepetitions } = useSoundSettings();
+  const {
+    volume,
+    repetitions,
+    setVolume,
+    setRepetitions,
+    apiAlarmEnabled,
+    setApiAlarmEnabled,
+  } = useSoundSettings();
   const playSound = usePlaySound();
   const router = useRouter();
 
@@ -22,6 +30,7 @@ export function SettingsButton() {
         ...router.query,
         volume: volume.toString(),
         repetitions: repetitions.toString(),
+        apiAlarmEnabled: apiAlarmEnabled.toString(),
       };
       void router.replace({ pathname: router.pathname, query }, undefined, {
         shallow: true,
@@ -81,6 +90,19 @@ export function SettingsButton() {
                 <option value={3}>3 times</option>
               </select>
             </div>
+          </div>
+
+          <div className="flex flex-1 items-center justify-between">
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+              Alarm for API going down
+            </label>
+            <Switch
+              checked={apiAlarmEnabled}
+              onCheckedChange={(checked) =>
+                setApiAlarmEnabled(checked as boolean)
+              }
+              className="ml-2"
+            />
           </div>
 
           <Button

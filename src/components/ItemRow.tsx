@@ -5,6 +5,7 @@ import { ShoppingCart } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 import type { GpuCard } from "./types/gpuInterface";
 import { usePlaySound } from "~/components/Beeper";
+import { useSoundSettings } from "~/context/SoundSettingsContext";
 import { track } from "@vercel/analytics";
 
 interface ItemRowProps {
@@ -15,16 +16,38 @@ interface ItemRowProps {
 export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
   const nvidiaBaseUrl = `https://marketplace.nvidia.com/${gpuCard.locale}/consumer/graphics-cards/?locale=${gpuCard.locale}&page=1&limit=12&manufacturer=NVIDIA`;
   const playSound = usePlaySound();
+  const { apiAlarmEnabled } = useSoundSettings();
 
   const prevAvailableRef = useRef(gpuCard.available);
+  const prevApiReachableRef = useRef(gpuCard.api_reachable);
 
   useEffect(() => {
+    // Check for stock availability changes
     if (!prevAvailableRef.current && gpuCard.available && gpuCard.included) {
       console.log("GPU available:", gpuCard.name);
       void playSound();
     }
     prevAvailableRef.current = gpuCard.available;
-  }, [gpuCard.available, gpuCard.included, gpuCard.name, playSound]);
+
+    // Check for API status changes from reachable to unreachable
+    if (
+      apiAlarmEnabled &&
+      prevApiReachableRef.current &&
+      !gpuCard.api_reachable &&
+      gpuCard.included
+    ) {
+      console.log("API became unreachable for:", gpuCard.name);
+      void playSound();
+    }
+    prevApiReachableRef.current = gpuCard.api_reachable;
+  }, [
+    gpuCard.available,
+    gpuCard.api_reachable,
+    gpuCard.included,
+    gpuCard.name,
+    playSound,
+    apiAlarmEnabled,
+  ]);
 
   return (
     <TableRow>

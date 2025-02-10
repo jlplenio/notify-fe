@@ -51,14 +51,32 @@ function useFetchGpuAvailability(
             (item) => item.is_active === "true",
           );
 
+          // Map API status to reachable and error flags
+          let api_reachable = false;
+          let api_error = false;
+          switch (mockResponse.apiStatus) {
+            case "reachable":
+              api_reachable = true;
+              api_error = false;
+              break;
+            case "unreachable":
+              api_reachable = false;
+              api_error = false;
+              break;
+            case "error":
+              api_reachable = false;
+              api_error = true;
+              break;
+          }
+
           return {
             ...card,
             locale: selectedRegion,
             product_url: mockResponse.listMap[0]?.product_url ?? null,
             available: isActive,
             last_seen: isActive ? new Date().toISOString() : card.last_seen,
-            api_reachable: true,
-            api_error: false,
+            api_reachable,
+            api_error,
           };
         }
 

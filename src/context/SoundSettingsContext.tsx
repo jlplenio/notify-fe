@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
 interface SoundSettings {
   volume: number;
   repetitions: number;
+  apiAlarmEnabled: boolean;
   setVolume: (v: number) => void;
   setRepetitions: (r: number) => void;
+  setApiAlarmEnabled: (enabled: boolean) => void;
 }
 
 const SoundSettingsContext = createContext<SoundSettings | undefined>(
@@ -18,10 +21,34 @@ export const SoundSettingsProvider = ({
 }) => {
   const [volume, setVolume] = useState(0.5);
   const [repetitions, setRepetitions] = useState(1);
+  const [apiAlarmEnabled, setApiAlarmEnabled] = useState(true);
+
+  // Read query parameters from the URL to set initial settings.
+  const { query, isReady } = useRouter();
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (typeof query.apiAlarmEnabled === "string") {
+      setApiAlarmEnabled(query.apiAlarmEnabled === "true");
+    }
+    if (typeof query.volume === "string") {
+      setVolume(Number(query.volume));
+    }
+    if (typeof query.repetitions === "string") {
+      setRepetitions(Number(query.repetitions));
+    }
+  }, [isReady, query.apiAlarmEnabled, query.volume, query.repetitions]);
 
   return (
     <SoundSettingsContext.Provider
-      value={{ volume, repetitions, setVolume, setRepetitions }}
+      value={{
+        volume,
+        repetitions,
+        apiAlarmEnabled,
+        setVolume,
+        setRepetitions,
+        setApiAlarmEnabled,
+      }}
     >
       {children}
     </SoundSettingsContext.Provider>

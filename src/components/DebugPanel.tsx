@@ -1,5 +1,9 @@
 import { useDebug } from "~/context/DebugContext";
-import { mockResponses, toggleMockAvailability } from "~/data/mock_responses";
+import {
+  mockResponses,
+  toggleMockAvailability,
+  toggleMockApiStatus,
+} from "~/data/mock_responses";
 import { Button } from "./ui/button";
 
 export function DebugPanel() {
@@ -23,15 +27,23 @@ export function DebugPanel() {
       </div>
       {spoofingEnabled && (
         <div className="space-y-2">
-          {Object.entries(mockResponses).map(([gpuName, isAvailable]) => (
+          {Object.entries(mockResponses).map(([gpuName, config]) => (
             <div key={gpuName} className="flex items-center gap-2">
               <span>{gpuName}:</span>
               <Button
-                variant={isAvailable ? "destructive" : "default"}
+                variant={config.available ? "destructive" : "default"}
                 size="sm"
                 onClick={() => toggleMockAvailability(gpuName)}
               >
-                {isAvailable ? "Set Unavailable" : "Set Available"}
+                {config.available ? "Set Unavailable" : "Set Available"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleMockApiStatus(gpuName)}
+                className="capitalize"
+              >
+                Status: {config.apiStatus}
               </Button>
             </div>
           ))}
