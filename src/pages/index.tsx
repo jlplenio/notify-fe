@@ -211,14 +211,14 @@ function Home({
           gpuCards={updatedGpuCards}
           onToggleIncluded={toggleIncluded}
         />
-        <div className="mt-7 grid grid-cols-3 gap-3">
-          <div className="flex scale-90 items-center justify-start sm:scale-100">
+        <div className="mt-7 grid grid-cols-3 gap-1 sm:gap-3">
+          <div className="z-20 flex scale-75 items-center justify-start sm:scale-90 md:scale-100">
             <SettingsButton />
           </div>
-          <div className="flex scale-90 items-center justify-center sm:scale-100">
+          <div className="flex scale-75 items-center justify-center sm:scale-90 md:scale-100">
             <KoFiButton />
           </div>
-          <div className="flex scale-90 items-center justify-end sm:scale-100">
+          <div className="flex scale-75 items-center justify-end sm:scale-90 md:scale-100">
             <ModeToggle />
           </div>
         </div>
