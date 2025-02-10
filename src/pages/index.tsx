@@ -21,6 +21,7 @@ import { usePlaySound } from "~/components/Beeper";
 import { DebugPanel } from "~/components/DebugPanel";
 import { useRouter } from "next/router";
 import { type GetServerSideProps } from "next";
+import { useSoundSettings } from "~/context/SoundSettingsContext";
 
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const { region } = query;
@@ -29,14 +30,42 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
       ? region
       : "en-gb";
 
+  const volumeParam = query.volume;
+  let initialVolume = 0.5;
+  if (typeof volumeParam === "string") {
+    const parsedVolume = parseFloat(volumeParam);
+    if (!isNaN(parsedVolume) && parsedVolume >= 0 && parsedVolume <= 1) {
+      initialVolume = parsedVolume;
+    }
+  }
+
+  const repetitionsParam = query.repetitions;
+  let initialRepetitions = 1;
+  if (typeof repetitionsParam === "string") {
+    const parsedReps = parseInt(repetitionsParam, 10);
+    if (!isNaN(parsedReps) && parsedReps > 0) {
+      initialRepetitions = parsedReps;
+    }
+  }
+
   return {
     props: {
       initialRegion: validRegion,
+      initialVolume,
+      initialRepetitions,
     },
   };
 };
 
-function Home({ initialRegion }: { initialRegion: string }): JSX.Element {
+function Home({
+  initialRegion,
+  initialVolume,
+  initialRepetitions,
+}: {
+  initialRegion: string;
+  initialVolume: number;
+  initialRepetitions: number;
+}): JSX.Element {
   const router = useRouter();
   const startCountdown = 21;
   const [countdown, setCountdown] = useState(startCountdown);
@@ -46,8 +75,8 @@ function Home({ initialRegion }: { initialRegion: string }): JSX.Element {
   const [gpuCards, setGpuCards] = useState(initialGpuCardsData);
   const [hasStartedOnce, setHasStartedOnce] = useState(false);
   const playSound = usePlaySound();
+  const { setVolume, setRepetitions } = useSoundSettings();
 
-  // Handle URL query parameter
   useEffect(() => {
     const { region } = router.query;
     if (typeof region === "string" && region in Object.values(localeInfo)) {
@@ -55,7 +84,13 @@ function Home({ initialRegion }: { initialRegion: string }): JSX.Element {
     }
   }, [router.query]);
 
-  // Update URL when region changes
+  useEffect(() => {
+    setVolume(initialVolume);
+    setRepetitions(initialRepetitions);
+  }, [initialVolume, initialRepetitions, setVolume, setRepetitions]);
+
+  // Query parameters for volume and repetitions will be updated when the Settings dialog is closed.
+
   const handleRegionChange = (newRegion: string) => {
     void router.push(
       {
@@ -68,7 +103,6 @@ function Home({ initialRegion }: { initialRegion: string }): JSX.Element {
     setSelectedRegion(newRegion);
   };
 
-  // Countdown logic
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
     if (isActive) {
@@ -96,7 +130,6 @@ function Home({ initialRegion }: { initialRegion: string }): JSX.Element {
     setIsActive(false);
   };
 
-  // Callback to update the "included" property for a card
   const toggleIncluded = (cardName: string, newValue: boolean) => {
     setGpuCards((prevCards) =>
       prevCards.map((card) =>
@@ -105,8 +138,6 @@ function Home({ initialRegion }: { initialRegion: string }): JSX.Element {
     );
   };
 
-  // Pass the updated gpuCards into the fetcher hook.
-  // When a card's included property changes, the fetcher will use this updated value.
   const [updatedGpuCards, isLoading, error] = useFetchGpuAvailability(
     gpuCards,
     selectedRegion,

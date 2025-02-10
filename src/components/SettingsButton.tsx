@@ -8,13 +8,29 @@ import {
 import { useSoundSettings } from "~/context/SoundSettingsContext";
 import { usePlaySound } from "./Beeper";
 import { GearIcon, SpeakerLoudIcon, BellIcon } from "@radix-ui/react-icons";
+import { useRouter } from "next/router";
 
 export function SettingsButton() {
   const { volume, repetitions, setVolume, setRepetitions } = useSoundSettings();
   const playSound = usePlaySound();
+  const router = useRouter();
+
+  const handlePopoverOpenChange = (open: boolean) => {
+    if (!open) {
+      // when popover closes, update URL query parameters
+      const query = {
+        ...router.query,
+        volume: volume.toString(),
+        repetitions: repetitions.toString(),
+      };
+      void router.replace({ pathname: router.pathname, query }, undefined, {
+        shallow: true,
+      });
+    }
+  };
 
   return (
-    <Popover>
+    <Popover onOpenChange={handlePopoverOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon">
           <GearIcon className="h-[1.2rem] w-[1.2rem]" />
