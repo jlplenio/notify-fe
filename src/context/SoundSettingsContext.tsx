@@ -21,7 +21,7 @@ export const SoundSettingsProvider = ({
 }) => {
   const [volume, setVolume] = useState(0.5);
   const [repetitions, setRepetitions] = useState(1);
-  const [apiAlarmEnabled, setApiAlarmEnabled] = useState(true);
+  const [apiAlarmEnabled, setApiAlarmEnabled] = useState(false);
 
   // Read query parameters from the URL to set initial settings.
   const { query, isReady } = useRouter();

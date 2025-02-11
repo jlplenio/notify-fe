@@ -1,8 +1,7 @@
 export interface GpuCard {
   name: string;
   api_url: string;
-  api_url_us?: string;
-  api_url_de?: string;
+  sku: string;
   product_url: string | null;
   available: boolean;
   last_seen: string | null;

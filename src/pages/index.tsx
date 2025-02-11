@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import { useFetchGpuAvailability } from "~/components/DataFetcher";
-import initialGpuCardsData from "~/data/gpu_info.json";
 import localeInfo from "~/data/locale_info.json";
 import ItemTable from "~/components/ItemTable";
 import { PlayCircleIcon, StopCircle } from "lucide-react";
@@ -22,6 +21,9 @@ import { DebugPanel } from "~/components/DebugPanel";
 import { useRouter } from "next/router";
 import { type GetServerSideProps } from "next";
 import { useSoundSettings } from "~/context/SoundSettingsContext";
+import { buildCompleteGpuInfo } from "~/utils/buildGpuInfo";
+import { type GpuCard } from "~/components/types/gpuInterface";
+import { api } from "~/utils/api";
 
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const { region } = query;
@@ -71,9 +73,47 @@ function Home({
   const [countdown, setCountdown] = useState(startCountdown);
   const [fetchTrigger, setFetchTrigger] = useState(0);
   const [isActive, setIsActive] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [animateSkuTime, setAnimateSkuTime] = useState<boolean>(false);
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
-  const [gpuCards, setGpuCards] = useState(initialGpuCardsData);
-  const [hasStartedOnce, setHasStartedOnce] = useState(false);
+
+  const { data: skuData, error: skuError } = api.skus.getSkus.useQuery(
+    undefined,
+    {
+      refetchInterval: 30000,
+      staleTime: 25000,
+      cacheTime: Infinity,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: false,
+      notifyOnChangeProps: "all",
+      onSuccess: () => {
+        setLastUpdate(new Date());
+        setAnimateSkuTime(true);
+        const timer = setTimeout(() => setAnimateSkuTime(false), 1000);
+        return () => clearTimeout(timer);
+      },
+    },
+  );
+
+  const [gpuCards, setGpuCards] = useState<GpuCard[]>(() => {
+    const initialGroupedGpuCards = buildCompleteGpuInfo() as Record<
+      string,
+      GpuCard[]
+    >;
+    return initialGroupedGpuCards[initialRegion] ?? [];
+  });
+
+  useEffect(() => {
+    if (skuData) {
+      const grouped = buildCompleteGpuInfo(skuData) as Record<
+        string,
+        GpuCard[]
+      >;
+      setGpuCards(grouped[selectedRegion] ?? []);
+    }
+  }, [skuData, selectedRegion]);
+
   const playSound = usePlaySound();
   const { setVolume, setRepetitions } = useSoundSettings();
 
@@ -89,9 +129,10 @@ function Home({
     setRepetitions(initialRepetitions);
   }, [initialVolume, initialRepetitions, setVolume, setRepetitions]);
 
-  // Query parameters for volume and repetitions will be updated when the Settings dialog is closed.
-
   const handleRegionChange = (newRegion: string) => {
+    const grouped = buildCompleteGpuInfo(skuData) as Record<string, GpuCard[]>;
+    setGpuCards(grouped[newRegion] ?? []);
+
     void router.push(
       {
         pathname: router.pathname,
@@ -122,7 +163,6 @@ function Home({
   const handleStart = () => {
     setFetchTrigger((prev) => prev + 1);
     setIsActive(true);
-    setHasStartedOnce(true);
     void playSound({ forceSingle: true });
   };
 
@@ -151,13 +191,27 @@ function Home({
           Notify-FE | notify-fe.plen.io
         </h1>
 
-        <div className="mb-6 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
+        <div className="mb-2 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
           Only checks the NVIDIA store! If the API is online, let the page run
           in the background, wait for the notification sound and click the Shop
           Link. Scalpers don&apos;t win!
         </div>
 
-        <div className="mb-4 text-center">
+        <div className="mb-2 text-center">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            The SKU update is experimental. Please do not solely rely on it.
+          </div>
+          <div
+            className={`mb-3 text-xs transition-colors duration-300 ${
+              animateSkuTime ? "text-primary" : ""
+            } ${skuError ? "text-red-400 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}
+          >
+            {skuError
+              ? "Last Automatic Check For SKU Updates: Failed"
+              : lastUpdate
+                ? `Last Automatic Check For SKU Updates: ${lastUpdate.toLocaleTimeString()}`
+                : "No updates yet"}
+          </div>
           <div className="grid grid-cols-3 items-center gap-3 px-4">
             <div className="flex justify-center">
               <div className="w-[161px]">
@@ -184,7 +238,7 @@ function Home({
               {!isActive ? (
                 <Button
                   variant="outline"
-                  className={`h-9 w-[95px] text-sm font-medium ${!hasStartedOnce ? "border-2 border-green-400" : ""}`}
+                  className={`h-9 w-[95px] text-sm font-medium`}
                   onClick={handleStart}
                 >
                   Start <PlayCircleIcon size={16} className="ml-1.5" />
