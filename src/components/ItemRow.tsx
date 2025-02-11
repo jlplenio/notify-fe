@@ -54,7 +54,12 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       <TableCell
         className={`align-middle ${!gpuCard.included ? "opacity-30" : ""}`}
       >
-        {gpuCard.name}
+        <div className="flex flex-col -space-y-1">
+          <div>{gpuCard.name}</div>
+          <div className="w-[85px] truncate text-[10px] text-gray-400">
+            {gpuCard.sku}
+          </div>
+        </div>
       </TableCell>
       <TableCell
         className={`justify-center text-center ${!gpuCard.included ? "opacity-30" : ""}`}
@@ -125,13 +130,13 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
           </a>
         )}
       </TableCell>
-      <TableCell className="flex items-center justify-center px-0 py-2.5 text-center">
+      <TableCell className="px-0 py-2 text-center">
         <Checkbox
           checked={gpuCard.included}
           onCheckedChange={(checked) =>
             onToggleIncluded(gpuCard.name, checked as boolean)
           }
-          className="h-4 w-4"
+          className="mx-auto h-4 w-4"
         />
       </TableCell>
     </TableRow>

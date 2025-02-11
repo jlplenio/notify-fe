@@ -24,7 +24,7 @@ export default function Component({
           <TableRow className="">
             <TableHead className="max-[500px]:text-[90%]">Item</TableHead>
             <TableHead className="text-center max-[500px]:text-[90%]">
-              API Status
+              API State
             </TableHead>
             <TableHead className="text-center max-[500px]:text-[90%]">
               In Stock

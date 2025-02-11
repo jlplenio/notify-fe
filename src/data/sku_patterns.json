@@ -1,0 +1,29 @@
+{
+  "5090": {
+    "de-de": ["5090FEPROSHOP", null],
+    "de-at": ["5090FEPROSHOP", null],
+    "fr-be": ["5090FEPROSHOP", null],
+    "nl-nl": ["5090FEPROSHOP", null],
+    "nb-no": ["5090FEPROSHOP", null],
+    "fi-fi": ["5090FEPROSHOP", null],
+    "sv-se": ["5090FEPROSHOP", null]
+  },
+  "5080": {
+    "de-de": ["PRO580GFTNV", null],
+    "de-at": ["PRO580GFTNV", null],
+    "fr-be": ["PRO580GFTNV", null],
+    "nl-nl": ["PRO580GFTNV", null],
+    "nb-no": ["PRO580GFTNV", null],
+    "fi-fi": ["PRO580GFTNV", null],
+    "sv-se": ["PRO580GFTNV", null]
+  },
+  "4090": {
+    "en-us": ["5750917900", null]
+  },
+  "4080S": {
+    "en-us": ["5845716300", null]
+  },
+  "4070S": {
+    "en-us": ["5845716400", null]
+  }
+}

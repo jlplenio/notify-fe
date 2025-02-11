@@ -80,17 +80,7 @@ function useFetchGpuAvailability(
           };
         }
 
-        let card_url = card.api_url;
-        if (
-          // Use German (or other selected) URL when applicable.
-          ["de-de", "fi-fi", "da-dk", "nb-no", "sv-se", "nl-nl"].includes(
-            selectedRegion,
-          ) &&
-          card.api_url_de
-        ) {
-          card_url = card.api_url_de;
-        }
-        const completeUrl = `${card_url}&locale=${selectedRegion}`;
+        const completeUrl = `${card.api_url}&locale=${selectedRegion}`;
 
         try {
           const response = await axios.get<ApiResponse>(completeUrl, {
