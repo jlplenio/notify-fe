@@ -1,4 +1,4 @@
-# Notify-FE v0.6
+# Notify-FE v0.7
 
 Available here [https://notify-fe.plen.io/](https://notify-fe.plen.io/)
 
@@ -16,6 +16,7 @@ Notify-FE is a web application designed to help users monitor and get notificati
 
 ## Features
 
+- **Automatic SKU Updates**: Automatically updates the SKU for each card.
 - **Client Side Requests**: Requests are sent directly from the client.
 - **API Status**: Visual indicator showing if the API endpoint is reachable for each card.
 - **Frequent Availability Updates**: Refreshes GPU availability every few seconds.
