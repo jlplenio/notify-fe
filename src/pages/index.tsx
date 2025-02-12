@@ -87,6 +87,7 @@ function Home({
       refetchOnReconnect: false,
       retry: false,
       notifyOnChangeProps: "all",
+      refetchIntervalInBackground: true,
       onSuccess: () => {
         setLastUpdate(new Date());
         setAnimateSkuTime(true);
