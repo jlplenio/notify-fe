@@ -2,7 +2,7 @@
 
 Available here [https://notify-fe.plen.io/](https://notify-fe.plen.io/)
 
-Notify-FE is a web application designed to help users monitor and get notifications on the availability of NVIDIA GeForce **Founders Edition** GPUs across various regions. It provides frequent updates, region selection, and audio notifications to alert users as soon as their desired GPU becomes available.
+Notify-FE is a web application designed to help users monitor and get notifications on the availability of NVIDIA GeForce **Founders Edition** GPUs across various regions from the official NVIDIA store. It provides frequent updates, region selection, and audio notifications to alert users as soon as their desired GPU becomes available.
 
 ## Monitored Cards
 

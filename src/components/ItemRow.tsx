@@ -95,7 +95,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       >
         {gpuCard.available && (
           <a
-            href={gpuCard.product_url ? gpuCard.product_url : nvidiaBaseUrl}
+            href={`/marketplace.nvidia.comm?target=${encodeURIComponent(gpuCard.product_url ? gpuCard.product_url : nvidiaBaseUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex align-middle"
