@@ -69,7 +69,7 @@ function Home({
   initialRepetitions: number;
 }): JSX.Element {
   const router = useRouter();
-  const startCountdown = 11;
+  const startCountdown = 16;
   const [countdown, setCountdown] = useState(startCountdown);
   const [fetchTrigger, setFetchTrigger] = useState(0);
   const [isActive, setIsActive] = useState(false);
