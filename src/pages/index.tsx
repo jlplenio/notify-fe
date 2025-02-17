@@ -69,8 +69,8 @@ function Home({
   initialRepetitions: number;
 }): JSX.Element {
   const router = useRouter();
-  const startCountdown = 16;
-  const [countdown, setCountdown] = useState(startCountdown);
+  const { refreshInterval, setVolume, setRepetitions } = useSoundSettings();
+  const [countdown, setCountdown] = useState(refreshInterval);
   const [fetchTrigger, setFetchTrigger] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -116,7 +116,6 @@ function Home({
   }, [skuData, selectedRegion]);
 
   const playSound = usePlaySound();
-  const { setVolume, setRepetitions } = useSoundSettings();
 
   useEffect(() => {
     const { region } = router.query;
@@ -129,6 +128,10 @@ function Home({
     setVolume(initialVolume);
     setRepetitions(initialRepetitions);
   }, [initialVolume, initialRepetitions, setVolume, setRepetitions]);
+
+  useEffect(() => {
+    setCountdown(refreshInterval);
+  }, [refreshInterval]);
 
   const handleRegionChange = (newRegion: string) => {
     const grouped = buildCompleteGpuInfo(skuData) as Record<string, GpuCard[]>;
@@ -152,14 +155,14 @@ function Home({
         setCountdown((currentCountdown) => {
           if (currentCountdown === 1) {
             setFetchTrigger((prev) => prev + 1);
-            return startCountdown;
+            return refreshInterval;
           }
           return currentCountdown - 1;
         });
       }, 1000);
     }
     return () => clearInterval(intervalId);
-  }, [isActive]);
+  }, [isActive, refreshInterval]);
 
   const handleStart = () => {
     setFetchTrigger((prev) => prev + 1);

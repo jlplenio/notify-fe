@@ -8,6 +8,7 @@ import {
 import { useSoundSettings } from "~/context/SoundSettingsContext";
 import { usePlaySound } from "./Beeper";
 import { GearIcon, SpeakerLoudIcon, BellIcon } from "@radix-ui/react-icons";
+import { ClockIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import { Switch } from "@/components/ui/switch";
 
@@ -19,6 +20,8 @@ export function SettingsButton() {
     setRepetitions,
     apiAlarmEnabled,
     setApiAlarmEnabled,
+    refreshInterval,
+    setRefreshInterval,
   } = useSoundSettings();
   const playSound = usePlaySound();
   const router = useRouter();
@@ -31,6 +34,7 @@ export function SettingsButton() {
         volume: volume.toString(),
         repetitions: repetitions.toString(),
         apiAlarmEnabled: apiAlarmEnabled.toString(),
+        refresh: refreshInterval.toString(),
       };
       void router.replace({ pathname: router.pathname, query }, undefined, {
         shallow: true,
@@ -70,6 +74,35 @@ export function SettingsButton() {
                 value={volume}
                 onChange={(e) => setVolume(Number(e.target.value))}
                 className="mt-1 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-gray-200 dark:bg-gray-700"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <ClockIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                  Refresh Interval (seconds)
+                </label>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {refreshInterval}s
+                </span>
+              </div>
+              <input
+                type="range"
+                min="6"
+                max="31"
+                step="1"
+                value={refreshInterval}
+                onChange={(e) =>
+                  setRefreshInterval(parseInt(e.target.value, 10))
+                }
+                className="mt-1 h-1.5 w-full cursor-pointer appearance-none rounded-full"
+                style={{
+                  background:
+                    "linear-gradient(to right, rgb(255, 150, 150) 0%, rgb(255, 150, 150) 40%, rgb(134, 239, 172) 40%, rgb(134, 239, 172) 100%)",
+                }}
               />
             </div>
           </div>

@@ -5,9 +5,11 @@ interface SoundSettings {
   volume: number;
   repetitions: number;
   apiAlarmEnabled: boolean;
+  refreshInterval: number;
   setVolume: (v: number) => void;
   setRepetitions: (r: number) => void;
   setApiAlarmEnabled: (enabled: boolean) => void;
+  setRefreshInterval: (r: number) => void;
 }
 
 const SoundSettingsContext = createContext<SoundSettings | undefined>(
@@ -22,6 +24,7 @@ export const SoundSettingsProvider = ({
   const [volume, setVolume] = useState(0.5);
   const [repetitions, setRepetitions] = useState(1);
   const [apiAlarmEnabled, setApiAlarmEnabled] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(16);
 
   // Read query parameters from the URL to set initial settings.
   const { query, isReady } = useRouter();
@@ -37,7 +40,19 @@ export const SoundSettingsProvider = ({
     if (typeof query.repetitions === "string") {
       setRepetitions(Number(query.repetitions));
     }
-  }, [isReady, query.apiAlarmEnabled, query.volume, query.repetitions]);
+    if (typeof query.refresh === "string") {
+      const parsedRefresh = parseInt(query.refresh, 10);
+      if (!isNaN(parsedRefresh) && parsedRefresh >= 6 && parsedRefresh <= 31) {
+        setRefreshInterval(parsedRefresh);
+      }
+    }
+  }, [
+    isReady,
+    query.apiAlarmEnabled,
+    query.volume,
+    query.repetitions,
+    query.refresh,
+  ]);
 
   return (
     <SoundSettingsContext.Provider
@@ -45,9 +60,11 @@ export const SoundSettingsProvider = ({
         volume,
         repetitions,
         apiAlarmEnabled,
+        refreshInterval,
         setVolume,
         setRepetitions,
         setApiAlarmEnabled,
+        setRefreshInterval,
       }}
     >
       {children}
