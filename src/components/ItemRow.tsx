@@ -34,6 +34,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       apiAlarmEnabled &&
       prevApiReachableRef.current &&
       !gpuCard.api_reachable &&
+      !gpuCard.api_error &&
       gpuCard.included
     ) {
       console.log("API became unreachable for:", gpuCard.name);
