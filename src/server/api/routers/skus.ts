@@ -9,10 +9,12 @@ const skuDetailSchema = z.object({
   last_change: z.string(),
 });
 
-// Define the type for a locale's SKU data (only for RTX 5080 and RTX 5090)
+// Define the type for a locale's SKU data
 const skuLocaleSchema = z.object({
-  "5080": skuDetailSchema,
-  "5090": skuDetailSchema,
+  "5070": skuDetailSchema.optional(),
+  "5070T": skuDetailSchema.optional(),
+  "5080": skuDetailSchema.optional(),
+  "5090": skuDetailSchema.optional(),
 });
 
 // Define the overall SKU data as a record by locale
