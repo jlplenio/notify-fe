@@ -11,6 +11,7 @@ import { GearIcon, SpeakerLoudIcon, BellIcon } from "@radix-ui/react-icons";
 import { ClockIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import { Switch } from "@/components/ui/switch";
+import { useState, useEffect } from "react";
 
 export function SettingsButton() {
   const {
@@ -25,8 +26,22 @@ export function SettingsButton() {
   } = useSoundSettings();
   const playSound = usePlaySound();
   const router = useRouter();
+  const [isPulsing, setIsPulsing] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsPulsing(false);
+    }, 15000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handlePopoverOpenChange = (open: boolean) => {
+    if (open) {
+      // Stop pulsing when popover is opened
+      setIsPulsing(false);
+    }
+
     if (!open) {
       // when popover closes, update URL query parameters
       const query = {
@@ -46,7 +61,9 @@ export function SettingsButton() {
     <Popover onOpenChange={handlePopoverOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon">
-          <GearIcon className="h-[1.2rem] w-[1.2rem]" />
+          <GearIcon
+            className={`h-[1.2rem] w-[1.2rem] ${isPulsing ? "animate-pulse-gentle" : ""}`}
+          />
           <span className="sr-only">Settings</span>
         </Button>
       </PopoverTrigger>
