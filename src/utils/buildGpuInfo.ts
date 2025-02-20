@@ -8,7 +8,6 @@ import type { SkuData, SkuLocaleData } from "~/server/api/routers/skus";
 const gpuDisplayOrder = [
   "5090",
   "5080",
-  "5070T",
   "5070",
   "4090",
   "4080S",
@@ -19,7 +18,6 @@ const gpuDisplayOrder = [
 const defaultSkus: Record<(typeof gpuDisplayOrder)[number], string> = {
   "5090": "NVGFT590",
   "5080": "NVGFT580",
-  "5070T": "NVGFT570T",
   "5070": "NVGFT570",
   "4090": "NVGFT490",
   "4080S": "NVGFT480S",

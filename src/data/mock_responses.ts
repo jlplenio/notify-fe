@@ -8,7 +8,6 @@ type MockResponseConfig = {
 export const mockResponses: Record<string, MockResponseConfig> = {
   "5090": { available: false, apiStatus: "reachable" },
   "5080": { available: false, apiStatus: "reachable" },
-  "5070T": { available: false, apiStatus: "reachable" },
   "5070": { available: false, apiStatus: "reachable" },
   "4090": { available: false, apiStatus: "reachable" },
   "4080S": { available: false, apiStatus: "reachable" },

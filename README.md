@@ -8,7 +8,6 @@ Notify-FE is a web application designed to help users monitor and get notificati
 
 - NVIDIA GeForce RTX 5090 FE
 - NVIDIA GeForce RTX 5080 FE
-- NVIDIA GeForce RTX 5070 Ti FE
 - NVIDIA GeForce RTX 5070 FE
 - NVIDIA GeForce RTX 4090 FE
 - NVIDIA GeForce RTX 4080 SUPER FE
