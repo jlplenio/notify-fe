@@ -77,7 +77,7 @@ function Home({
   const [animateSkuTime, setAnimateSkuTime] = useState<boolean>(false);
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
 
-  const { data: skuData, error: skuError } = api.skus.getSkus.useQuery(
+  const { data: skuData, error: skuError } = api.skus.getSkus_1337.useQuery(
     undefined,
     {
       refetchInterval: 30000,
@@ -196,12 +196,14 @@ function Home({
         </h1>
 
         <div className="mb-2 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
-          Only checks the NVIDIA store! Click start, let the page run in the background, wait for the notification sound and click the Shop Link.
+          Only checks the NVIDIA store! Click start, let the page run in the
+          background, wait for the notification sound and click the Shop Link.
           More settings bottom-left ⚙️ Scalpers don&apos;t win!
         </div>
 
         <div className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
-          💝 This service has cost $60.81 to run so far (Feb 20). Thank you for your support!
+          💝 This service has cost $90.33 to run so far (Feb 25). Thank you for
+          your support!
         </div>
 
         <div className="mb-2 text-center">

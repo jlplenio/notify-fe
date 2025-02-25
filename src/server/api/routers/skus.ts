@@ -27,7 +27,7 @@ export type SkuData = z.infer<typeof skuDataSchema>;
 const SKUS_URL = process.env.SKUS_URL!;
 
 export const skusRouter = createTRPCRouter({
-  getSkus: publicProcedure.query(async () => {
+  getSkus_1337: publicProcedure.query(async () => {
     // Fetch from the remote URL without caching
     const response = await axios.get(SKUS_URL);
     // Validate and parse using zod
