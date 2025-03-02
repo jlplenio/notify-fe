@@ -9,4 +9,5 @@ export interface GpuCard {
   api_reachable: boolean;
   included: boolean;
   api_error: boolean;
+  last_change?: string; // ISO formatted timestamp of the last change
 }

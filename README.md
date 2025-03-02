@@ -16,6 +16,7 @@ Notify-FE is a web application designed to help users monitor and get notificati
 ## Features
 
 - **Automatic SKU Updates**: Automatically updates the SKU for each card.
+- **Auto-open Shop Links**: Automatically opens the shop page in a new tab when a monitored GPU becomes available.
 - **Client Side Requests**: Requests are sent directly from the client.
 - **API Status**: Visual indicator showing if the API endpoint is reachable for each card.
 - **Frequent Availability Updates**: Refreshes GPU availability every few seconds.

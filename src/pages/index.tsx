@@ -24,6 +24,7 @@ import { useSoundSettings } from "~/context/SoundSettingsContext";
 import { buildCompleteGpuInfo } from "~/utils/buildGpuInfo";
 import { type GpuCard } from "~/components/types/gpuInterface";
 import { api } from "~/utils/api";
+import { PermissionHandler } from "~/components/PermissionHandler";
 
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const { region } = query;
@@ -189,125 +190,129 @@ function Home({
   );
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="w-full max-w-lg rounded-b-2xl border-b border-l border-r p-5 shadow-lg">
-        <h1 className="mb-3 text-center text-2xl font-bold">
-          Notify-FE | notify-fe.plen.io
-        </h1>
+    <>
+      <div className="flex flex-col items-center justify-center">
+        <div className="w-full max-w-lg rounded-b-2xl border-b border-l border-r p-5 shadow-lg">
+          <h1 className="mb-3 text-center text-2xl font-bold">
+            Notify-FE | notify-fe.plen.io
+          </h1>
 
-        <div className="mb-2 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
-          Only checks the NVIDIA store! Click start, let the page run in the
-          background, wait for the notification sound and click the Shop Link.
-          More settings bottom-left ⚙️ Scalpers don&apos;t win!
-        </div>
+          <div className="mb-2 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
+            NVIDIA store only! Click start, a notification will sound on
+            availability, then click the Shop Link or let it open automatically.
+            More settings bottom-left ⚙️ Scalpers don&apos;t win!
+          </div>
 
-        <div className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
-          💝 This service has cost $90.33 to run so far (Feb 25). Thank you for
-          your support!
-        </div>
+          <PermissionHandler />
 
-        <div className="mb-2 text-center">
-          <div className="grid grid-cols-3 items-center gap-3 px-4">
-            <div className="flex justify-center">
-              <div className="w-[161px]">
-                <Select
-                  value={selectedRegion}
-                  onValueChange={handleRegionChange}
-                >
-                  <SelectTrigger className="h-9 bg-background text-sm font-medium">
-                    <SelectValue placeholder="Select Region" />
-                  </SelectTrigger>
-                  <SelectContent className="text-sm">
-                    {Object.entries(localeInfo).map(
-                      ([countryName, countryCode]) => (
-                        <SelectItem key={countryCode} value={countryCode}>
-                          {countryName}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
+          <div className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
+            💝 This service has cost $112.93 to run so far (Mar 2). Thank you
+            for your support!
+          </div>
+
+          <div className="mb-2 text-center">
+            <div className="grid grid-cols-3 items-center gap-3 px-4">
+              <div className="flex justify-center">
+                <div className="w-[161px]">
+                  <Select
+                    value={selectedRegion}
+                    onValueChange={handleRegionChange}
+                  >
+                    <SelectTrigger className="h-9 bg-background text-sm font-medium">
+                      <SelectValue placeholder="Select Region" />
+                    </SelectTrigger>
+                    <SelectContent className="text-sm">
+                      {Object.entries(localeInfo).map(
+                        ([countryName, countryCode]) => (
+                          <SelectItem key={countryCode} value={countryCode}>
+                            {countryName}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                {!isActive ? (
+                  <Button
+                    variant="outline"
+                    className={`h-9 w-[95px] text-sm font-medium`}
+                    onClick={handleStart}
+                  >
+                    Start <PlayCircleIcon size={16} className="ml-1.5" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="h-9 w-[95px] text-sm font-medium"
+                    onClick={handleStop}
+                  >
+                    Stop <StopCircle size={16} className="ml-1.5" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex h-9 w-full items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium text-muted-foreground sm:w-[138px]">
+                {!isLoading
+                  ? `Refresh in ${countdown.toString().padStart(2, "0")}s`
+                  : "Refreshing..."}
               </div>
             </div>
-            <div className="flex justify-center">
-              {!isActive ? (
-                <Button
-                  variant="outline"
-                  className={`h-9 w-[95px] text-sm font-medium`}
-                  onClick={handleStart}
-                >
-                  Start <PlayCircleIcon size={16} className="ml-1.5" />
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="h-9 w-[95px] text-sm font-medium"
-                  onClick={handleStop}
-                >
-                  Stop <StopCircle size={16} className="ml-1.5" />
-                </Button>
-              )}
-            </div>
-            <div className="flex h-9 w-full items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium text-muted-foreground sm:w-[138px]">
-              {!isLoading
-                ? `Refresh in ${countdown.toString().padStart(2, "0")}s`
-                : "Refreshing..."}
-            </div>
           </div>
-        </div>
-        {error ? <p>Error: {error.message}</p> : null}
-        <ItemTable
-          gpuCards={updatedGpuCards}
-          onToggleIncluded={toggleIncluded}
-        />
-
-        <div className="mt-4 text-center">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            The SKU update is experimental. Please do not solely rely on it.
-          </div>
-          <div
-            className={`text-xs transition-colors duration-300 ${
-              animateSkuTime ? "text-primary" : ""
-            } ${skuError ? "text-red-400 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}
-          >
-            {skuError
-              ? "Last Automatic Check For SKU Updates: Failed"
-              : lastUpdate
-                ? `Last Automatic Check For SKU Updates: ${lastUpdate.toLocaleTimeString()}`
-                : "No updates yet"}
-          </div>
-        </div>
-
-        <div className="mt-7 grid grid-cols-3 gap-1 sm:gap-3">
-          <div className="z-20 flex scale-75 items-center justify-start sm:scale-90 md:scale-100">
-            <SettingsButton />
-          </div>
-          <div className="flex scale-75 items-center justify-center sm:scale-90 md:scale-100">
-            <KoFiButton />
-          </div>
-          <div className="flex scale-75 items-center justify-end sm:scale-90 md:scale-100">
-            <ModeToggle />
-          </div>
-        </div>
-      </div>
-      <Analytics />
-      {process.env.NODE_ENV === "development" && <DebugPanel />}
-      <div className="mt-3">
-        <a
-          href="https://github.com/jlplenio/notify-fe"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            className="dark:invert"
-            src="/github_logo.svg"
-            alt="GitHub Mark"
-            height={22}
-            width={32}
+          {error ? <p>Error: {error.message}</p> : null}
+          <ItemTable
+            gpuCards={updatedGpuCards}
+            onToggleIncluded={toggleIncluded}
           />
-        </a>
+
+          <div className="mt-4 text-center">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              The SKU update is experimental. Please do not solely rely on it.
+            </div>
+            <div
+              className={`text-xs transition-colors duration-300 ${
+                animateSkuTime ? "text-primary" : ""
+              } ${skuError ? "text-red-400 dark:text-red-400" : "text-gray-500 dark:text-gray-400"}`}
+            >
+              {skuError
+                ? "Last Automatic Check For SKU Updates: Failed"
+                : lastUpdate
+                  ? `Last Automatic Check For SKU Updates: ${lastUpdate.toLocaleTimeString()}`
+                  : "No updates yet"}
+            </div>
+          </div>
+
+          <div className="mt-7 grid grid-cols-3 gap-1 sm:gap-3">
+            <div className="z-20 flex scale-75 items-center justify-start sm:scale-90 md:scale-100">
+              <SettingsButton />
+            </div>
+            <div className="flex scale-75 items-center justify-center sm:scale-90 md:scale-100">
+              <KoFiButton />
+            </div>
+            <div className="flex scale-75 items-center justify-end sm:scale-90 md:scale-100">
+              <ModeToggle />
+            </div>
+          </div>
+        </div>
+        <Analytics />
+        {process.env.NODE_ENV === "development" && <DebugPanel />}
+        <div className="mt-3">
+          <a
+            href="https://github.com/jlplenio/notify-fe"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              className="dark:invert"
+              src="/github_logo.svg"
+              alt="GitHub Mark"
+              height={22}
+              width={32}
+            />
+          </a>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

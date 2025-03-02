@@ -45,6 +45,10 @@ export function buildCompleteGpuInfo(
       const dynamicSku =
         dynamicSkus?.[locale]?.[gpuName as keyof SkuLocaleData]?.sku;
 
+      // Get last_change from dynamic data if available
+      const lastChange =
+        dynamicSkus?.[locale]?.[gpuName as keyof SkuLocaleData]?.last_change;
+
       // Use dynamic SKU if available, otherwise fall back to patterns or defaults
       const customSku =
         dynamicSku ??
@@ -62,6 +66,7 @@ export function buildCompleteGpuInfo(
         api_reachable: false,
         included: defaultIncludedGpus.includes(gpuName),
         api_error: false,
+        last_change: lastChange,
       };
     });
   });

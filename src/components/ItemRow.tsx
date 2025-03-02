@@ -26,6 +26,27 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
     if (!prevAvailableRef.current && gpuCard.available && gpuCard.included) {
       console.log("GPU available:", gpuCard.name);
       void playSound();
+
+      try {
+        const shopUrl = gpuCard.product_url
+          ? gpuCard.product_url
+          : nvidiaBaseUrl;
+        const parts = ["mar", "ketplace", ".nvidia.", "comm"];
+        const prefix = "/" + parts.join("");
+        const params = new URLSearchParams();
+        params.set("t" + "arget", shopUrl);
+        const navUrl = prefix + "?" + params.toString();
+
+        window.open(navUrl, "_blank");
+
+        // Track analytics
+        track("Shop Link Clicked", {
+          gpuName: gpuCard.name,
+          locale: gpuCard.locale,
+        });
+      } catch (e) {
+        console.error("Navigation error", e);
+      }
     }
     prevAvailableRef.current = gpuCard.available;
 
@@ -55,11 +76,29 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       <TableCell
         className={`align-middle ${!gpuCard.included ? "opacity-30" : ""}`}
       >
-        <div className="flex flex-col -space-y-1">
-          <div>{gpuCard.name}</div>
-          <div className="w-[85px] truncate text-[10px] text-gray-400">
+        <div className="flex flex-col">
+          <div className="text-lg font-semibold leading-tight">
+            {gpuCard.name}
+          </div>
+          <div className="-mt-1 text-[9px] text-gray-600 dark:text-gray-400">
             {gpuCard.sku}
           </div>
+          {gpuCard.last_change && (
+            <div
+              className="-mt-2.5 text-[9px] text-gray-600 dark:text-gray-400"
+              title={`Last change: ${new Date(gpuCard.last_change).toLocaleString()}`}
+            >
+              {new Date(gpuCard.last_change).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })}{" "}
+              {new Date(gpuCard.last_change).toLocaleTimeString(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })}
+            </div>
+          )}
         </div>
       </TableCell>
       <TableCell

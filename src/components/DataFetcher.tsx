@@ -105,6 +105,8 @@ function useFetchGpuAvailability(
             last_seen: isActive ? new Date().toISOString() : card.last_seen,
             api_reachable: isApiReachable,
             api_error: false,
+            // Preserve last_change from the original card
+            last_change: card.last_change,
           };
         } catch (error) {
           return {
@@ -112,6 +114,8 @@ function useFetchGpuAvailability(
             locale: selectedRegion,
             api_reachable: false,
             api_error: true,
+            // Preserve last_change from the original card
+            last_change: card.last_change,
           };
         }
       });
