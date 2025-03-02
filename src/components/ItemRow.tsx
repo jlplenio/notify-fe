@@ -77,7 +77,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
         className={`align-middle ${!gpuCard.included ? "opacity-30" : ""}`}
       >
         <div className="flex flex-col">
-          <div className="text-lg font-semibold leading-tight">
+          <div className="text-l font-semibold leading-tight">
             {gpuCard.name}
           </div>
           <div className="-mt-1 text-[9px] text-gray-600 dark:text-gray-400">

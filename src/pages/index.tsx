@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import { track } from "@vercel/analytics";
 import { useFetchGpuAvailability } from "~/components/DataFetcher";
 import localeInfo from "~/data/locale_info.json";
 import ItemTable from "~/components/ItemTable";
@@ -199,8 +200,12 @@ function Home({
 
           <div className="mb-2 rounded-lg bg-green-100 px-4 py-2 text-center text-sm text-green-800 dark:bg-green-900/30 dark:text-green-200">
             NVIDIA store only! Click start, a notification will sound on
-            availability, then click the Shop Link or let it open automatically.
-            More settings bottom-left ⚙️ Scalpers don&apos;t win!
+            availability.{" "}
+            <span className="font-semibold">
+              The first Shop Link will open automatically
+            </span>
+            , afterwards click it manually. More settings bottom-left ⚙️
+            Scalpers don&apos;t win!
           </div>
 
           <PermissionHandler />
