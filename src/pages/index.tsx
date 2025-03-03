@@ -169,7 +169,7 @@ function Home({
   const handleStart = () => {
     setFetchTrigger((prev) => prev + 1);
     setIsActive(true);
-    void playSound({ forceSingle: true });
+    void playSound({ forceSingle: true, message: "" });
   };
 
   const handleStop = () => {
@@ -204,14 +204,15 @@ function Home({
             <span className="font-semibold">
               The first Shop Link will open automatically
             </span>
-            , afterwards click it manually. More settings bottom-left ⚙️
-            Scalpers don&apos;t win!
+            , afterwards click it manually. More general and{" "}
+            <span className="font-semibold">Telegram</span> settings bottom-left
+            ⚙️ Scalpers don&apos;t win!
           </div>
 
           <PermissionHandler />
 
           <div className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
-            💝 This service has cost $112.93 to run so far (Mar 2). Thank you
+            💝 This service has cost $131.40 to run so far (Mar 4). Thank you
             for your support!
           </div>
 

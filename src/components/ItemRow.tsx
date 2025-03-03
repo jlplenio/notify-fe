@@ -25,7 +25,10 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
     // Check for stock availability changes
     if (!prevAvailableRef.current && gpuCard.available && gpuCard.included) {
       console.log("GPU available:", gpuCard.name);
-      void playSound();
+      // Message is included in the Telegram notification with current URL
+      void playSound({
+        message: `🎯 ${gpuCard.name} is now in stock!`,
+      });
 
       try {
         const shopUrl = gpuCard.product_url
@@ -59,7 +62,10 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       gpuCard.included
     ) {
       console.log("API became unreachable for:", gpuCard.name);
-      void playSound();
+      // Message is included in the Telegram notification with current URL
+      void playSound({
+        message: `⚠️ API became unreachable for ${gpuCard.name}`,
+      });
     }
     prevApiReachableRef.current = gpuCard.api_reachable;
   }, [

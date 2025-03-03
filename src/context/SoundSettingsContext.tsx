@@ -6,10 +6,12 @@ interface SoundSettings {
   repetitions: number;
   apiAlarmEnabled: boolean;
   refreshInterval: number;
+  telegramApiUrl: string;
   setVolume: (v: number) => void;
   setRepetitions: (r: number) => void;
   setApiAlarmEnabled: (enabled: boolean) => void;
   setRefreshInterval: (r: number) => void;
+  setTelegramApiUrl: (url: string) => void;
 }
 
 const SoundSettingsContext = createContext<SoundSettings | undefined>(
@@ -25,12 +27,41 @@ export const SoundSettingsProvider = ({
   const [repetitions, setRepetitions] = useState(1);
   const [apiAlarmEnabled, setApiAlarmEnabled] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(16);
+  const [telegramApiUrl, setTelegramApiUrlState] = useState("");
+
+  // Custom setter for telegramApiUrl that also updates localStorage
+  const setTelegramApiUrl = (url: string) => {
+    setTelegramApiUrlState(url);
+    // Only store in localStorage when on the client side
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("telegramApiUrl", url);
+      } catch (error) {
+        console.error("Error storing telegramApiUrl in localStorage:", error);
+      }
+    }
+  };
 
   // Read query parameters from the URL to set initial settings.
   const { query, isReady } = useRouter();
 
+  // Initialize state from localStorage and URL query parameters
   useEffect(() => {
+    // Try to get telegramApiUrl from localStorage first
+    if (typeof window !== "undefined") {
+      try {
+        const storedUrl = localStorage.getItem("telegramApiUrl");
+        if (storedUrl) {
+          setTelegramApiUrlState(storedUrl);
+        }
+      } catch (error) {
+        console.error("Error reading telegramApiUrl from localStorage:", error);
+      }
+    }
+
     if (!isReady) return;
+
+    // URL query parameters override localStorage values
     if (typeof query.apiAlarmEnabled === "string") {
       setApiAlarmEnabled(query.apiAlarmEnabled === "true");
     }
@@ -46,12 +77,16 @@ export const SoundSettingsProvider = ({
         setRefreshInterval(parsedRefresh);
       }
     }
+    if (typeof query.telegramApiUrl === "string" && query.telegramApiUrl) {
+      setTelegramApiUrl(query.telegramApiUrl);
+    }
   }, [
     isReady,
     query.apiAlarmEnabled,
     query.volume,
     query.repetitions,
     query.refresh,
+    query.telegramApiUrl,
   ]);
 
   return (
@@ -61,10 +96,12 @@ export const SoundSettingsProvider = ({
         repetitions,
         apiAlarmEnabled,
         refreshInterval,
+        telegramApiUrl,
         setVolume,
         setRepetitions,
         setApiAlarmEnabled,
         setRefreshInterval,
+        setTelegramApiUrl,
       }}
     >
       {children}
