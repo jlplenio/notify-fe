@@ -24,8 +24,18 @@ import { type GetServerSideProps } from "next";
 import { useSoundSettings } from "~/context/SoundSettingsContext";
 import { buildCompleteGpuInfo } from "~/utils/buildGpuInfo";
 import { type GpuCard } from "~/components/types/gpuInterface";
-import { api } from "~/utils/api";
+import axios from "axios"; // Import axios for making HTTP requests
 import { PermissionHandler } from "~/components/PermissionHandler";
+
+// Type definition for the SKU data returned from the API
+interface SkuItem {
+  sku: string;
+  old_sku: string;
+  last_change: string;
+}
+
+type SkuLocaleData = Record<string, SkuItem>;
+type SkuData = Record<string, SkuLocaleData>;
 
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const { region } = query;
@@ -78,26 +88,10 @@ function Home({
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [animateSkuTime, setAnimateSkuTime] = useState<boolean>(false);
   const [selectedRegion, setSelectedRegion] = useState(initialRegion);
-
-  const { data: skuData, error: skuError } = api.skus.getSkus_1337.useQuery(
-    undefined,
-    {
-      refetchInterval: 30000,
-      staleTime: 25000,
-      cacheTime: Infinity,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      retry: false,
-      notifyOnChangeProps: "all",
-      refetchIntervalInBackground: true,
-      onSuccess: () => {
-        setLastUpdate(new Date());
-        setAnimateSkuTime(true);
-        const timer = setTimeout(() => setAnimateSkuTime(false), 1000);
-        return () => clearTimeout(timer);
-      },
-    },
-  );
+  const [skuData, setSkuData] = useState<SkuData | null>(null);
+  const [skuError, setSkuError] = useState<Error | null>(null);
+  const skuUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const initialFetchDoneRef = useRef<boolean>(false);
 
   const [gpuCards, setGpuCards] = useState<GpuCard[]>(() => {
     const initialGroupedGpuCards = buildCompleteGpuInfo() as Record<
@@ -106,6 +100,56 @@ function Home({
     >;
     return initialGroupedGpuCards[initialRegion] ?? [];
   });
+
+  // Client-side fetch for SKU data every X seconds
+  useEffect(() => {
+    const fetchSkuData = async () => {
+      try {
+        const uniqueParam = Math.random();
+        const response = await axios.get<SkuData>(
+          `https://r2.jlplen.io/skus.json?nocache=${uniqueParam}`,
+          // Please use with consideration and donate https://ko-fi.com/timesaved <3
+          // Use http://localhost:3000 if running locally
+          {
+            timeout: 5000,
+          },
+        );
+        setSkuData(response.data);
+        setLastUpdate(new Date());
+        setAnimateSkuTime(true);
+        setSkuError(null);
+
+        // Update animation state
+        const timer = setTimeout(() => setAnimateSkuTime(false), 1000);
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.error("Error fetching SKU data:", error);
+        setSkuError(
+          error instanceof Error
+            ? error
+            : new Error("Failed to fetch SKU data"),
+        );
+      }
+    };
+
+    // Only perform the initial fetch if it hasn't been done yet
+    if (!initialFetchDoneRef.current) {
+      void fetchSkuData();
+      initialFetchDoneRef.current = true;
+    }
+
+    // Set up the interval to fetch every 15 seconds
+    skuUpdateIntervalRef.current = setInterval(() => {
+      void fetchSkuData();
+    }, 10100); // Do not change this, you will get rate-limit banned by Cloudflare
+
+    // Clean up on unmount
+    return () => {
+      if (skuUpdateIntervalRef.current) {
+        clearInterval(skuUpdateIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (skuData) {
@@ -136,7 +180,10 @@ function Home({
   }, [refreshInterval]);
 
   const handleRegionChange = (newRegion: string) => {
-    const grouped = buildCompleteGpuInfo(skuData) as Record<string, GpuCard[]>;
+    const grouped = buildCompleteGpuInfo(skuData ?? undefined) as Record<
+      string,
+      GpuCard[]
+    >;
     setGpuCards(grouped[newRegion] ?? []);
 
     void router.push(
