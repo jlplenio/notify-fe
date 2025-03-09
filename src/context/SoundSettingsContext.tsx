@@ -25,8 +25,8 @@ export const SoundSettingsProvider = ({
 }) => {
   const [volume, setVolume] = useState(0.5);
   const [repetitions, setRepetitions] = useState(1);
-  const [apiAlarmEnabled, setApiAlarmEnabled] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(16);
+  const [apiAlarmEnabled, setApiAlarmEnabled] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(10);
   const [telegramApiUrl, setTelegramApiUrlState] = useState("");
 
   // Custom setter for telegramApiUrl that also updates localStorage

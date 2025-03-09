@@ -132,7 +132,7 @@ export function SettingsButton() {
                 className="mt-1 h-1.5 w-full cursor-pointer appearance-none rounded-full"
                 style={{
                   background:
-                    "linear-gradient(to right, rgb(255, 150, 150) 0%, rgb(255, 150, 150) 40%, rgb(134, 239, 172) 40%, rgb(134, 239, 172) 100%)",
+                    "linear-gradient(to right, rgb(255, 150, 150) 0%, rgb(255, 150, 150) 18%, rgb(134, 239, 172) 18%, rgb(134, 239, 172) 100%)",
                 }}
               />
             </div>

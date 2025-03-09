@@ -20,6 +20,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
 
   const prevAvailableRef = useRef(gpuCard.available);
   const prevApiReachableRef = useRef(gpuCard.api_reachable);
+  const prevLocaleRef = useRef(gpuCard.locale);
 
   useEffect(() => {
     // Check for stock availability changes
@@ -53,13 +54,18 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
     }
     prevAvailableRef.current = gpuCard.available;
 
+    // Check if the region has changed
+    const regionChanged = prevLocaleRef.current !== gpuCard.locale;
+
     // Check for API status changes from reachable to unreachable
+    // Only trigger alerts if we're in the same region
     if (
       apiAlarmEnabled &&
       prevApiReachableRef.current &&
       !gpuCard.api_reachable &&
       !gpuCard.api_error &&
-      gpuCard.included
+      gpuCard.included &&
+      !regionChanged // Prevent alerts when switching regions
     ) {
       console.log("API became unreachable for:", gpuCard.name);
       // Message is included in the Telegram notification with current URL
@@ -67,12 +73,15 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
         message: `⚠️ API became unreachable for ${gpuCard.name}`,
       });
     }
+
     prevApiReachableRef.current = gpuCard.api_reachable;
+    prevLocaleRef.current = gpuCard.locale; // Update the locale reference
   }, [
     gpuCard.available,
     gpuCard.api_reachable,
     gpuCard.included,
     gpuCard.name,
+    gpuCard.locale, // Add locale to dependencies
     playSound,
     apiAlarmEnabled,
   ]);

@@ -157,7 +157,19 @@ function Home({
         string,
         GpuCard[]
       >;
-      setGpuCards(grouped[selectedRegion] ?? []);
+
+      // Preserve the 'included' state when updating gpuCards with new SKU data
+      setGpuCards((prevCards) => {
+        const newCards = grouped[selectedRegion] ?? [];
+        return newCards.map((newCard) => {
+          // Find the corresponding card in previous state
+          const prevCard = prevCards.find((card) => card.name === newCard.name);
+          // Preserve the 'included' state if it exists, otherwise use the new card's value
+          return prevCard
+            ? { ...newCard, included: prevCard.included }
+            : newCard;
+        });
+      });
     }
   }, [skuData, selectedRegion]);
 
@@ -184,7 +196,26 @@ function Home({
       string,
       GpuCard[]
     >;
-    setGpuCards(grouped[newRegion] ?? []);
+
+    // Preserve the included state when changing regions
+    setGpuCards((prevCards) => {
+      const newCards = grouped[newRegion] ?? [];
+
+      // For each new card, check if there's a card with the same name in the previous region
+      // and preserve its 'included' state if found
+      return newCards.map((newCard) => {
+        // Try to find a card with the same name in the previous region
+        const prevCard = prevCards.find(
+          (card) =>
+            // Look for matching names (ignoring region-specific parts of the name if present)
+            card.name.replace(selectedRegion, "").trim() ===
+            newCard.name.replace(newRegion, "").trim(),
+        );
+
+        // If a matching card is found, preserve its included state
+        return prevCard ? { ...newCard, included: prevCard.included } : newCard;
+      });
+    });
 
     void router.push(
       {
@@ -259,7 +290,7 @@ function Home({
           <PermissionHandler />
 
           <div className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
-            💝 This service has cost $131.40 to run so far (Mar 4). Thank you
+            💝 This service has cost $151.40 to run so far (Mar 9). Thank you
             for your support!
           </div>
 
