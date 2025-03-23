@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ArrowRightLeft } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 import type { GpuCard } from "./types/gpuInterface";
 import { usePlaySound } from "~/components/Beeper";
@@ -101,8 +101,12 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
           {gpuCard.last_change && (
             <div
               className="-mt-2.5 text-[9px] text-gray-600 dark:text-gray-400"
-              title={`Last change: ${new Date(gpuCard.last_change).toLocaleString()}`}
+              title={`Last SKU change: ${new Date(gpuCard.last_change).toLocaleString()}`}
             >
+              <ArrowRightLeft
+                size={10}
+                className="mr-0.5 inline-block align-text-bottom"
+              />
               {new Date(gpuCard.last_change).toLocaleDateString(undefined, {
                 month: "short",
                 day: "numeric",

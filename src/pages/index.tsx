@@ -290,7 +290,7 @@ function Home({
           <PermissionHandler />
 
           <div className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
-            💝 This service has cost $151.40 to run so far (Mar 9). Thank you
+            💝 This service has cost $173.12 to run so far (Mar 23). Thank you
             for your support!
           </div>
 
@@ -349,10 +349,7 @@ function Home({
             onToggleIncluded={toggleIncluded}
           />
 
-          <div className="mt-4 text-center">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              The SKU update is experimental. Please do not solely rely on it.
-            </div>
+          <div className="mt-2 text-center">
             <div
               className={`text-xs transition-colors duration-300 ${
                 animateSkuTime ? "text-primary" : ""
@@ -364,9 +361,14 @@ function Home({
                   ? `Last Automatic Check For SKU Updates: ${lastUpdate.toLocaleTimeString()}`
                   : "No updates yet"}
             </div>
+            {skuError && (
+              <div className="mt-1 text-xs text-red-400 dark:text-red-400">
+                Error: {skuError.message}
+              </div>
+            )}
           </div>
 
-          <div className="mt-7 grid grid-cols-3 gap-1 sm:gap-3">
+          <div className="mt-4 grid grid-cols-3 gap-1 sm:gap-3">
             <div className="z-20 flex scale-75 items-center justify-start sm:scale-90 md:scale-100">
               <SettingsButton />
             </div>
