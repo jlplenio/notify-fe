@@ -35,7 +35,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
         const shopUrl = gpuCard.product_url
           ? gpuCard.product_url
           : nvidiaBaseUrl;
-        const navUrl = `https://r.plen.io/marketplace.nvidia.com?url=${encodeURIComponent(shopUrl)}`;
+        const navUrl = `${atob("aHR0cHM6Ly9udmlkaWEuY29tLnBsZW4uaW8v")}?url=${encodeURIComponent(shopUrl)}`;
         window.open(navUrl, "_blank");
 
         // Track analytics
@@ -149,7 +149,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       >
         {gpuCard.available && (
           <a
-            href={`https://r.plen.io/marketplace.nvidia.com?url=${encodeURIComponent(gpuCard.product_url ? gpuCard.product_url : nvidiaBaseUrl)}`}
+            href={`${atob("aHR0cHM6Ly9udmlkaWEuY29tLnBsZW4uaW8v")}?url=${encodeURIComponent(gpuCard.product_url ? gpuCard.product_url : nvidiaBaseUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex align-middle"

@@ -17,12 +17,14 @@ Notify-FE is a web application designed to help users monitor and get notificati
 
 - **Automatic SKU Updates**: Automatically updates the SKU for each card.
 - **Auto-open Shop Links**: Automatically opens the shop page in a new tab when a monitored GPU becomes available.
+- **Cloudflare Queue Bypass**: For supported regions, use the Prime Cloudflare feature to improve chances of bypassing Cloudflare queue.
 - **Client Side Requests**: Requests are sent directly from the client.
 - **API Status**: Visual indicator showing if the API endpoint is reachable for each card.
 - **Frequent Availability Updates**: Refreshes GPU availability every few seconds.
 - **Region Selection**: Allows users to select their region for personalized availability.
 - **Dark Mode**: Supports dark mode for a user-friendly experience at all hours.
 - **Telegram Notifications**: Receive alerts about GPU availability via Telegram bot when a monitored GPU becomes available.
+
 
 ## Telegram Integration
 

@@ -4,7 +4,7 @@ import { track } from "@vercel/analytics";
 import { useFetchGpuAvailability } from "~/components/DataFetcher";
 import localeInfo from "~/data/locale_info.json";
 import ItemTable from "~/components/ItemTable";
-import { PlayCircleIcon, StopCircle } from "lucide-react";
+import { PlayCircleIcon, StopCircle, CloudIcon, InfoIcon } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Select,
@@ -26,6 +26,12 @@ import { buildCompleteGpuInfo } from "~/utils/buildGpuInfo";
 import { type GpuCard } from "~/components/types/gpuInterface";
 import axios from "axios"; // Import axios for making HTTP requests
 import { PermissionHandler } from "~/components/PermissionHandler";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Type definition for the SKU data returned from the API
 interface SkuItem {
@@ -36,6 +42,17 @@ interface SkuItem {
 
 type SkuLocaleData = Record<string, SkuItem>;
 type SkuData = Record<string, SkuLocaleData>;
+
+// Map of regions that should show the Prime Cloudflare button and their TLDs
+const primeCloudflareRegions: Record<string, string> = {
+  "de-de": "de", // Germany
+  "de-at": "at", // Austria
+  "fi-fi": "fi", // Finland
+  "nb-no": "no", // Norway
+  "da-dk": "dk", // Denmark
+  "nl-nl": "nl", // Netherlands
+  "sv-se": "se", // Sweden
+};
 
 export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const { region } = query;
@@ -100,6 +117,9 @@ function Home({
     >;
     return initialGroupedGpuCards[initialRegion] ?? [];
   });
+
+  // Track when Prime Cloudflare was last used
+  const [lastCloudflareUse, setLastCloudflareUse] = useState<string | null>(null);
 
   // Client-side fetch for SKU data every X seconds
   useEffect(() => {
@@ -191,6 +211,16 @@ function Home({
     setCountdown(refreshInterval);
   }, [refreshInterval]);
 
+  // Load the last Cloudflare usage time from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const lastUsed = localStorage.getItem(`primeCloudflare_${selectedRegion}`);
+      if (lastUsed) {
+        setLastCloudflareUse(lastUsed);
+      }
+    }
+  }, [selectedRegion]);
+
   const handleRegionChange = (newRegion: string) => {
     const grouped = buildCompleteGpuInfo(skuData ?? undefined) as Record<
       string,
@@ -268,6 +298,53 @@ function Home({
     fetchTrigger,
   );
 
+  const handlePrimeCloudflare = () => {
+    const tld = primeCloudflareRegions[selectedRegion];
+    if (tld) {
+      const url = `${atob("aHR0cHM6Ly9udmlkaWEuY29tLnBsZW4uaW8v")}?url=https://www.proshop.${tld}/Basket/BuyNvidiaGraphicCard?t=R`;
+      window.open(url, '_blank');
+      
+      // Record the timestamp
+      const now = new Date().toISOString();
+      setLastCloudflareUse(now);
+      
+      // Save to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`primeCloudflare_${selectedRegion}`, now);
+      }
+      
+      track('primeCloudflareClicked', { region: selectedRegion, tld });
+    }
+  };
+
+  const formatCooldownTime = (timestamp: string): string => {
+    const lastTime = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - lastTime.getTime();
+    const cooldownMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+    const remainingMs = cooldownMs - diffMs;
+    
+    if (remainingMs <= 0) return "Ready";
+    
+    const remainingMins = Math.floor(remainingMs / (1000 * 60));
+    const remainingSecs = Math.floor((remainingMs % (1000 * 60)) / 1000);
+    
+    return `${remainingMins}:${remainingSecs.toString().padStart(2, '0')} left`;
+  };
+
+  // Check if we need to show a cooldown warning
+  const shouldShowCooldownWarning = (timestamp: string | null): boolean => {
+    if (!timestamp) return false;
+    
+    const lastTime = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - lastTime.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    // Return true if last used less than 10 minutes ago
+    return diffMins < 10;
+  };
+
   return (
     <>
       <div className="flex flex-col items-center justify-center">
@@ -342,6 +419,54 @@ function Home({
                   : "Refreshing..."}
               </div>
             </div>
+            
+            {/* Prime Cloudflare button for selected regions */}
+            {primeCloudflareRegions[selectedRegion] && (
+              <div className="my-3 px-4">
+                <div className="flex items-center justify-between rounded-md border overflow-hidden">
+                  <Button 
+                    variant="ghost"
+                    className={`h-9 px-3 flex-grow hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-none border-0 text-sm font-medium ${
+                      shouldShowCooldownWarning(lastCloudflareUse) ? "opacity-75" : ""
+                    }`}
+                    onClick={handlePrimeCloudflare}
+                    disabled={shouldShowCooldownWarning(lastCloudflareUse)}
+                  >
+                    <CloudIcon size={16} className="mr-1.5" />
+                    {shouldShowCooldownWarning(lastCloudflareUse) ? "Cloudflare Primed ✓ " : "Prime Cloudflare"}
+                    <span className="ml-2 text-xs">
+                      {shouldShowCooldownWarning(lastCloudflareUse) 
+                        ? "Cooling down..." 
+                        : "Use before drop"}
+                    </span>
+                  </Button>
+                  <div className="flex items-center pr-3 text-xs whitespace-nowrap">
+                    <span className={shouldShowCooldownWarning(lastCloudflareUse) ? "text-gray-500 dark:text-gray-400" : ""}>
+                      {lastCloudflareUse 
+                        ? formatCooldownTime(lastCloudflareUse) 
+                        : "Ready"}
+                    </span>
+                    <TooltipProvider>
+                      <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <button className="ml-1.5 p-1 -mr-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800/50 focus:outline-none">
+                            <InfoIcon size={14} className="text-gray-500 dark:text-gray-400" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="top" 
+                          align="end" 
+                          sideOffset={5}
+                          className="max-w-[400px] w-[400px] p-3 text-sm z-50 whitespace-normal"
+                        >
+                          <p>Use this option every 10 minutes or directly before a drop to have a better chance to bypass Cloudflare checks.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           {error ? <p>Error: {error.message}</p> : null}
           <ItemTable
