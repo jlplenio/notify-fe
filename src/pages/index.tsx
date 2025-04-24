@@ -321,7 +321,7 @@ function Home({
     const lastTime = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - lastTime.getTime();
-    const cooldownMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+    const cooldownMs = 15 * 60 * 1000; // 10 minutes in milliseconds
     const remainingMs = cooldownMs - diffMs;
     
     if (remainingMs <= 0) return "Ready";
@@ -367,8 +367,7 @@ function Home({
           <PermissionHandler />
 
           <div className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
-            💝 This service has cost $173.12 to run so far (Mar 23). Thank you
-            for your support!
+            💝 Thank you for your donations and support. This project is now fully funded.
           </div>
 
           <div className="mb-2 text-center">

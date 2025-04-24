@@ -93,26 +93,6 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
           <div className="-mt-1 text-[9px] text-gray-600 dark:text-gray-400">
             {gpuCard.sku}
           </div>
-          {gpuCard.last_change && (
-            <div
-              className="-mt-2.5 text-[9px] text-gray-600 dark:text-gray-400"
-              title={`Last SKU change: ${new Date(gpuCard.last_change).toLocaleString()}`}
-            >
-              <ArrowRightLeft
-                size={10}
-                className="mr-0.5 inline-block align-text-bottom"
-              />
-              {new Date(gpuCard.last_change).toLocaleDateString(undefined, {
-                month: "short",
-                day: "numeric",
-              })}{" "}
-              {new Date(gpuCard.last_change).toLocaleTimeString(undefined, {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              })}
-            </div>
-          )}
         </div>
       </TableCell>
       <TableCell
