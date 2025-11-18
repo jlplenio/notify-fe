@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@types/eslint": "^8.44.7",
-    "@types/node": "^18.17.0",
+    "@types/node": "^22.0.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@typescript-eslint/eslint-plugin": "^6.11.0",
@@ -57,6 +57,17 @@
   },
   "ct3aMetadata": {
     "initVersion": "7.26.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "overrides": {
+    "@next/eslint-plugin-next": {
+      "glob": "10.5.0"
+    },
+    "sucrase": {
+      "glob": "10.5.0"
+    }
   },
   "packageManager": "npm@10.2.3"
 }
