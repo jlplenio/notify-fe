@@ -4,6 +4,15 @@ Available here [https://notify-fe.plen.io/](https://notify-fe.plen.io/)
 
 Notify-FE is a web application designed to help users monitor and get notifications on the availability of NVIDIA GeForce **Founders Edition** GPUs across various regions from the official NVIDIA store. It provides frequent updates, region selection, and audio notifications to alert users as soon as their desired GPU becomes available.
 
+## Acknowledgments
+
+A quick but special thanks to [**Cloudflare**](https://github.com/cloudflare). They handled 2M+ daily requests with a 99.99% cache hit rate, protecting my R2 bucket from massive fees and saving the project from financial ruin — all while billing me exactly **$0** since implementation.
+
+<div align="center">
+  <img src=".github/cloudflare_kudos.png" alt="Cloudflare Kudos" width="60%" />
+</div>
+
+
 ## Monitored Cards
 
 - NVIDIA GeForce RTX 5090 FE
@@ -38,3 +47,4 @@ To receive notifications about GPU availability through Telegram:
 3. Click the "Test Telegram" button to verify your setup works
 
 Once configured, you'll automatically receive Telegram messages when your monitored GPUs become available.
+
