@@ -6,7 +6,7 @@ Notify-FE is a web application designed to help users monitor and get notificati
 
 ## Acknowledgments
 
-A quick but special thanks to [**Cloudflare**](https://github.com/cloudflare). They handled 2M+ daily requests with a 99.99% cache hit rate, protecting my R2 bucket from massive fees and saving the project from financial ruin — all while billing me exactly **$0** since implementation.
+A quick thanks to [**Cloudflare**](https://github.com/cloudflare). They handled 2M+ daily requests with a 99.99% cache hit rate, protecting my R2 bucket from massive fees and saving the project from financial ruin — all while billing me exactly **$0** since implementation.
 
 <div align="center">
   <img src=".github/cloudflare_kudos.png" alt="Cloudflare Kudos" width="60%" />
