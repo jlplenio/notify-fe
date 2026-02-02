@@ -26,7 +26,6 @@ A quick thanks to [**Cloudflare**](https://github.com/cloudflare). They handled 
 
 - **Automatic SKU Updates**: Automatically updates the SKU for each card.
 - **Auto-open Shop Links**: Automatically opens the shop page in a new tab when a monitored GPU becomes available.
-- **Cloudflare Queue Bypass**: For supported regions, use the Prime Cloudflare feature to improve chances of bypassing Cloudflare queue.
 - **Client Side Requests**: Requests are sent directly from the client.
 - **API Status**: Visual indicator showing if the API endpoint is reachable for each card.
 - **Frequent Availability Updates**: Refreshes GPU availability every few seconds.
