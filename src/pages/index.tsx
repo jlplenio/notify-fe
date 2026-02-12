@@ -292,6 +292,10 @@ function Home({
             ⚙️ Scalpers don&apos;t win!
           </div>
 
+          <div className="mb-2 rounded bg-amber-100 px-3 py-1 text-center text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+            12 Feb: API unstable — please use multiple stock tools at once
+          </div>
+
           <PermissionHandler />
 
           <div className="mb-2 flex justify-center">
