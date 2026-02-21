@@ -293,7 +293,9 @@ function Home({
           </div>
 
           <div className="mb-2 rounded bg-amber-100 px-3 py-1 text-center text-xs text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-            12 Feb: API unstable — please use multiple stock tools at once
+            12 Feb: API unstable — please use multiple stock tools at once.
+            <br />
+            If grey API error: Shift+click on the browser reload button for hard refresh.
           </div>
 
           <PermissionHandler />
