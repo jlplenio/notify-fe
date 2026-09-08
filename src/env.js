@@ -16,7 +16,9 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_WEBSOCKET_URL: z.string().url().optional(),
+    NEXT_PUBLIC_ALLOW_SYNTHETIC: z.enum(["true", "false"]).default("false"),
+    NEXT_PUBLIC_ENABLE_DEMO: z.enum(["true", "false"]).default("false"),
   },
 
   /**
@@ -25,7 +27,9 @@ export const env = createEnv({
    */
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
-    // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
+    NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
+    NEXT_PUBLIC_ALLOW_SYNTHETIC: process.env.NEXT_PUBLIC_ALLOW_SYNTHETIC,
+    NEXT_PUBLIC_ENABLE_DEMO: process.env.NEXT_PUBLIC_ENABLE_DEMO,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

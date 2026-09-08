@@ -7,6 +7,9 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
+    "check": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/lib/realtime/preferences.test.ts src/lib/realtime/protocol.test.ts src/lib/realtime/actions.test.ts",
+    "test:browser": "node --experimental-strip-types scripts/frontend-smoke.mjs",
     "start": "next start"
   },
   "dependencies": {
@@ -49,6 +52,7 @@
     "autoprefixer": "^10.4.14",
     "eslint": "^8.54.0",
     "eslint-config-next": "^14.0.4",
+    "playwright-core": "1.63.0",
     "postcss": "^8.4.31",
     "prettier": "^3.1.0",
     "prettier-plugin-tailwindcss": "^0.5.7",
@@ -59,7 +63,7 @@
     "initVersion": "7.26.0"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   },
   "overrides": {
     "@next/eslint-plugin-next": {

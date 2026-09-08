@@ -1,27 +1,14 @@
-import React, { useEffect } from "react";
-import Head from "next/head";
-import { useRouter } from "next/router";
+import type { GetServerSideProps } from "next";
+import { legacyRedirectTarget } from "~/lib/realtime/catalog";
 
-const DynamicRedirect: React.FC = () => {
-  const router = useRouter();
-
-  useEffect(() => {
-    if (router.isReady) {
-      const path = router.asPath;
-      if (path.startsWith("/marketplace.nvidia.comm")) {
-        const targetUrl = router.query.target as string;
-        setTimeout(() => {
-          window.location.href = targetUrl;
-        }, 50);
-      }
-    }
-  }, [router.isReady]);
-
-  return (
-    <Head>
-      <meta name="referrer" content="unsafe-url" />
-    </Head>
-  );
+export const getServerSideProps: GetServerSideProps = async ({ query }) => {
+  const path = Array.isArray(query.path) ? "/" + query.path.join("/") : "";
+  const destination = legacyRedirectTarget(query.target);
+  if (!path.startsWith("/marketplace.nvidia.comm") || !destination)
+    return { notFound: true };
+  return { redirect: { destination, permanent: false } };
 };
 
-export default DynamicRedirect;
+export default function LegacyRedirect() {
+  return null;
+}
