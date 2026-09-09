@@ -4,9 +4,11 @@ import { demoPacket } from "./demo.ts";
 import { storeUrl, legacyRedirectTarget } from "./catalog.ts";
 import {
   MonitorState,
+  isStockCheckFresh,
   packetSchema,
   relativeTime,
   subscriptionUrl,
+  unhealthyStockModels,
   type Packet,
 } from "./protocol.ts";
 
@@ -105,6 +107,114 @@ void test("source health expires using server time plus monotonic elapsed time",
   p.cards[0]!.observedAt = p.serverTime - 60_000;
   state.accept(p, 85_100);
   assert.equal(state.health(85_100), "source_degraded");
+});
+
+void test("catalog degradation does not mislabel fresh stock checks or rewrite the wire status", () => {
+  for (const catalogStatus of [
+    "stale",
+    "unknown",
+    "blocked",
+    "timeout",
+    "network_error",
+    "rate_limited",
+    "invalid_response",
+  ] as const) {
+    const p = packet();
+    p.status = "source_degraded";
+    p.catalogStatus = catalogStatus;
+    p.catalogCheckedAt = null;
+    const state = new MonitorState("de-de");
+    state.accept(p, 0);
+    assert.equal(state.health(0), "healthy", catalogStatus);
+    assert.equal(state.packet?.status, "source_degraded");
+    assert.equal(state.packet?.catalogStatus, catalogStatus);
+    assert.equal(state.packet?.catalogCheckedAt, null);
+  }
+});
+
+void test("missing, stale, failed, future or unknown stock stays degraded even with a fresh catalog", () => {
+  for (const reason of [
+    "missing",
+    "stale",
+    "failed",
+    "future",
+    "unknown",
+    "unobserved",
+  ]) {
+    const p = packet();
+    const card = p.cards.find((c) => c.model === "5070")!;
+    if (reason === "missing")
+      p.cards = p.cards.filter((c) => c.model !== "5070");
+    if (reason === "stale") card.observedAt = p.serverTime - p.staleAfterMs;
+    if (reason === "failed") card.status = "blocked";
+    if (reason === "future") card.observedAt = p.serverTime + 1;
+    if (reason === "unknown") card.available = null;
+    if (reason === "unobserved") card.observedAt = null;
+    const state = new MonitorState("de-de");
+    state.accept(p, 0);
+    assert.equal(state.health(0), "source_degraded", reason);
+    assert.deepEqual(unhealthyStockModels(p, p.serverTime), ["5070"], reason);
+    assert.ok(
+      isStockCheckFresh(
+        p.cards.find((c) => c.model === "5090"),
+        p.serverTime,
+        p.staleAfterMs,
+      ),
+    );
+  }
+});
+
+void test("catalog-only degradation cannot keep stock green after its own freshness deadline", () => {
+  const p = packet();
+  p.status = "source_degraded";
+  p.catalogStatus = "stale";
+  p.catalogCheckedAt = null;
+  p.cards[0]!.observedAt = p.serverTime - p.staleAfterMs + 1000;
+  const state = new MonitorState("de-de");
+  state.accept(p, 0);
+  assert.equal(state.health(999), "healthy");
+  assert.equal(state.health(1000), "source_degraded");
+});
+
+void test("a dead, missing or invalid publisher is never masked by healthy stock", () => {
+  for (const reason of ["explicit", "expired", "missing", "future"]) {
+    const p = packet();
+    if (reason === "explicit") p.status = "offline";
+    if (reason === "expired")
+      p.lastPublisherAt = p.serverTime - p.offlineAfterMs;
+    if (reason === "missing") p.lastPublisherAt = null;
+    if (reason === "future") p.lastPublisherAt = p.serverTime + 1;
+    const state = new MonitorState("de-de");
+    state.accept(p, 0);
+    assert.equal(state.health(0), "offline", reason);
+  }
+});
+
+void test("another locale's failures do not degrade this locale's stock checks", () => {
+  const p = packet();
+  p.globalMetrics = {
+    requests: 90,
+    valid: 0,
+    failed: 90,
+    windowRequests: 90,
+    windowValid: 0,
+    windowFailed: 90,
+  };
+  const state = new MonitorState("de-de");
+  state.accept(p, 0);
+  assert.equal(state.health(0), "healthy");
+});
+
+void test("fresh in-stock updates still alert with an incomplete catalog", () => {
+  const state = new MonitorState("de-de");
+  state.accept(packet(), 0);
+  const p = packet(2, "update", true);
+  p.status = "source_degraded";
+  p.catalogStatus = "stale";
+  p.catalogCheckedAt = null;
+  assert.deepEqual(state.accept(p, 1)?.alerts, ["5090"]);
+  assert.equal(state.health(1), "healthy");
+  assert.deepEqual(state.accept(p, 2)?.alerts, []);
 });
 
 void test("source and subscription identity are validated; synthetic is opt-in", () => {

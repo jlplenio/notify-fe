@@ -133,9 +133,13 @@ function publish(locale, available = null, type = "update", synthetic = true) {
     type,
     synthetic,
   };
-  latest.set(locale, packet);
+  return deliver(packet);
+}
+
+function deliver(packet) {
+  latest.set(packet.locale, packet);
   for (const [socket, subscribed] of sockets)
-    if (subscribed === locale) socket.send(JSON.stringify(packet));
+    if (subscribed === packet.locale) socket.send(JSON.stringify(packet));
   return packet;
 }
 
@@ -166,7 +170,7 @@ try {
   await page.goto(new URL("/?region=de-de", base).href);
   await page
     .getByTestId("monitor-health")
-    .getByText("Monitor healthy", { exact: true })
+    .getByText("Stock checks active", { exact: true })
     .waitFor();
   assert.equal(await page.getByRole("switch").count(), 3);
   for (const model of ["5090", "5080", "5070"])
@@ -290,6 +294,149 @@ try {
     "PASS: 13 locales, exactly three 50-series cards, all selected by default, history visible, quiet initial snapshot",
   );
 
+  phase = "stock health independent of catalog completeness and other locales";
+  assert.equal(await page.getByTestId("catalog-notice").count(), 0);
+  const incomplete = () => ({
+    ...demoPacket("de-de", Date.now(), ++sequence),
+    type: "health",
+    status: "source_degraded",
+    catalogStatus: "stale",
+    catalogCheckedAt: null,
+  });
+  deliver(incomplete());
+  await page
+    .getByTestId("catalog-notice")
+    .getByText("SKU verification incomplete — using last-known mappings.", {
+      exact: true,
+    })
+    .waitFor();
+  await page
+    .getByTestId("monitor-health")
+    .getByText("Stock checks active", { exact: true })
+    .waitFor();
+  assert.equal(
+    await page.getByTestId("monitor-health").getAttribute("data-tone"),
+    "healthy",
+  );
+  assert.equal(
+    await page.getByTestId("catalog-notice").getAttribute("data-tone"),
+    "muted",
+  );
+  assert.equal(
+    await page.getByText("Some checks are delayed", { exact: true }).count(),
+    0,
+  );
+  for (const model of ["5090", "5080", "5070"])
+    assert.equal(
+      await page.getByTestId(`stock-${model}`).innerText(),
+      "Out of stock",
+    );
+  await page.screenshot({
+    path: resolve(screenshots, "catalog-partial-desktop-light.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.getByRole("button", { name: "Toggle theme" }).click();
+  await page.getByRole("menuitem", { name: "Dark", exact: true }).click();
+  await page.waitForFunction(() =>
+    document.documentElement.classList.contains("dark"),
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: resolve(screenshots, "catalog-partial-mobile-dark.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  for (const width of [320, 390, 600, 601, 1365]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.ok(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+      `Catalog note fits ${width}px`,
+    );
+  }
+  await page.getByRole("button", { name: "Toggle theme" }).click();
+  await page.getByRole("menuitem", { name: "Light", exact: true }).click();
+
+  deliver({ ...incomplete(), catalogStatus: "timeout" });
+  await page
+    .getByTestId("catalog-notice")
+    .getByText("SKU refresh timed out — using last-known mappings.", {
+      exact: true,
+    })
+    .waitFor();
+  assert.equal(
+    await page.getByTestId("catalog-notice").getAttribute("data-tone"),
+    "warning",
+  );
+  assert.equal(
+    await page.getByTestId("monitor-health").getAttribute("data-tone"),
+    "healthy",
+  );
+
+  const austria = demoPacket("de-at", Date.now(), ++sequence);
+  austria.status = "source_degraded";
+  austria.cards.find((c) => c.model === "5070").status = "invalid_response";
+  austria.cards.find((c) => c.model === "5070").available = null;
+  austria.cards.find((c) => c.model === "5070").observedAt = null;
+  deliver(austria);
+  assert.equal(
+    await page.getByTestId("monitor-health").getAttribute("data-tone"),
+    "healthy",
+    "Austria cannot change Germany's status",
+  );
+  await page.locator("#locale").selectOption("de-at");
+  await page
+    .getByTestId("monitor-health")
+    .getByText("RTX 5070 checks unavailable", { exact: true })
+    .waitFor();
+  assert.equal(await page.getByTestId("stock-5070").innerText(), "Unconfirmed");
+  assert.equal(
+    await page.getByTestId("stock-5080").innerText(),
+    "Out of stock",
+  );
+  assert.equal(
+    await page.getByTestId("monitor-health").getAttribute("data-tone"),
+    "warning",
+  );
+  assert.equal(await page.getByTestId("catalog-notice").count(), 0);
+  await page.screenshot({
+    path: resolve(screenshots, "stock-card-warning.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.locator("#locale").selectOption("de-de");
+  await page
+    .getByTestId("monitor-health")
+    .getByText("Stock checks active", { exact: true })
+    .waitFor();
+
+  const staleStock = incomplete();
+  staleStock.cards.find((c) => c.model === "5080").observedAt =
+    staleStock.serverTime - staleStock.staleAfterMs;
+  deliver(staleStock);
+  await page
+    .getByTestId("monitor-health")
+    .getByText("RTX 5080 checks unavailable", { exact: true })
+    .waitFor();
+  assert.equal(await page.getByTestId("stock-5080").innerText(), "Unconfirmed");
+  assert.equal(
+    await page.getByTestId("stock-5090").innerText(),
+    "Out of stock",
+  );
+  publish("de-de", null, "health");
+  await page
+    .getByTestId("monitor-health")
+    .getByText("Stock checks active", { exact: true })
+    .waitFor();
+  await page.getByTestId("catalog-notice").waitFor({ state: "detached" });
+  assert.equal(await page.getByTestId("availability-alert").count(), 0);
+  assert.equal(await page.evaluate(() => window.__testAudioPlays), 0);
+  console.log(
+    "PASS: catalog-only degradation stays separate, real stock gaps name affected cards, locale isolation and recovery stay correct",
+  );
+
   phase = "persistent choices without a socket reconnect";
   await waitFor(() => sockets.size === 1, "Expected one active subscription");
   const connectionBaseline = totalConnections;
@@ -312,7 +459,7 @@ try {
   );
   await page
     .getByTestId("monitor-health")
-    .getByText("Monitor healthy", { exact: true })
+    .getByText("Stock checks active", { exact: true })
     .waitFor();
   publish("de-de", "5090");
   await page
@@ -374,7 +521,7 @@ try {
   );
   await page
     .getByTestId("monitor-health")
-    .getByText("Monitor healthy", { exact: true })
+    .getByText("Stock checks active", { exact: true })
     .waitFor();
   assert.equal(await page.getByTestId("availability-alert").count(), 0);
   assert.equal(await page.evaluate(() => window.__testAudioPlays), 2);
@@ -418,7 +565,7 @@ try {
   await setup(actionsContext);
   const actionPage = await actionsContext.newPage();
   await actionPage.goto(new URL("/?region=de-de", base).href);
-  await actionPage.getByText("Monitor healthy", { exact: true }).waitFor();
+  await actionPage.getByText("Stock checks active", { exact: true }).waitFor();
   publish("de-de", "5090", "update", false);
   await actionPage.getByTestId("availability-alert").waitFor();
   assert.equal(
@@ -449,7 +596,7 @@ try {
     .click();
   assert.equal(await actionPage.evaluate(() => window.__testOpened.length), 1);
   await actionPage.reload();
-  await actionPage.getByText("Monitor healthy", { exact: true }).waitFor();
+  await actionPage.getByText("Stock checks active", { exact: true }).waitFor();
   assert.equal(
     await actionPage
       .getByRole("button", { name: "Auto-open on", exact: true })
@@ -468,7 +615,7 @@ try {
   await actionPage
     .getByRole("button", { name: "Sound off", exact: true })
     .waitFor();
-  await actionPage.getByText("Monitor healthy", { exact: true }).waitFor();
+  await actionPage.getByText("Stock checks active", { exact: true }).waitFor();
   publish("de-de", null, "update", false);
   publish("de-de", "5090", "update", false);
   await waitFor(
@@ -506,7 +653,7 @@ try {
   await setup(audioContext, false, true);
   const audioPage = await audioContext.newPage();
   await audioPage.goto(new URL("/?region=de-de", base).href);
-  await audioPage.getByText("Monitor healthy", { exact: true }).waitFor();
+  await audioPage.getByText("Stock checks active", { exact: true }).waitFor();
   publish("de-de", "5090");
   await audioPage
     .getByText(
@@ -534,7 +681,7 @@ try {
   await setup(deniedContext);
   const deniedPage = await deniedContext.newPage();
   await deniedPage.goto(new URL("/?region=de-de", base).href);
-  await deniedPage.getByText("Monitor healthy", { exact: true }).waitFor();
+  await deniedPage.getByText("Stock checks active", { exact: true }).waitFor();
   await deniedPage.evaluate(() => {
     window.__testRejectAudio = true;
   });
@@ -721,7 +868,7 @@ try {
     await setup(popupContext, false, false, true);
     const popupPage = await popupContext.newPage();
     await popupPage.goto(new URL("/?demo=1&region=de-de", base).href);
-    await popupPage.getByText("Monitor healthy", { exact: true }).waitFor();
+    await popupPage.getByText("Stock checks active", { exact: true }).waitFor();
     await popupPage
       .getByRole("button", { name: "Auto-open off", exact: true })
       .click();
@@ -775,7 +922,9 @@ try {
     await setup(blockingContext, false, false, true);
     const blockedPage = await blockingContext.newPage();
     await blockedPage.goto(new URL("/?demo=1&region=de-de", base).href);
-    await blockedPage.getByText("Monitor healthy", { exact: true }).waitFor();
+    await blockedPage
+      .getByText("Stock checks active", { exact: true })
+      .waitFor();
     await blockedPage
       .getByRole("button", { name: "Auto-open off", exact: true })
       .click();

@@ -345,6 +345,27 @@
   font-size: 13px;
   line-height: 1.5;
 }
+.catalogNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 7px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--subtle);
+  color: var(--secondary-ink);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.catalogNotice > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.catalogNotice[data-tone="warning"] {
+  color: #856225;
+}
+:global(.dark) .catalogNotice[data-tone="warning"] {
+  color: #e2c67e;
+}
 .retry {
   display: grid;
   place-items: center;
@@ -899,6 +920,10 @@
   }
   .healthDetail {
     font-size: 13px;
+  }
+  .catalogNotice {
+    padding-left: 12px;
+    padding-right: 12px;
   }
   .columnLabels,
   .stockCard {

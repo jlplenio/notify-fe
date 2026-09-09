@@ -20,6 +20,10 @@ Open [notify-fe.plen.io](https://notify-fe.plen.io/) to use the public watchlist
   and the original slower 0.7× alert sound are included.
 - Separates connection status from source health. An open connection does not
   mean the monitor is successfully checking stock.
+- Shows “Stock checks active” for fresh stock results in the selected region,
+  naming affected cards when checks are unavailable. SKU-catalog verification
+  has a separate notice; incomplete verification is not a stock-check timeout.
+  Stock checks can continue with known SKU mappings, but a newer SKU may be missed.
 - Displays global and regional **live listeners**. These count active alert
   subscriptions, not unique people; one person can have more than one.
 

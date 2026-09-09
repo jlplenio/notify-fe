@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Github,
   Heart,
+  Info,
   Radio,
   RefreshCw,
   ExternalLink,
@@ -36,61 +37,14 @@ import {
   type Preferences,
 } from "~/lib/realtime/preferences";
 import {
+  isStockCheckFresh,
   relativeTime,
   type CardState,
   type Packet,
 } from "~/lib/realtime/protocol";
 import { autoOpenStores, previewStoreUrl } from "~/lib/realtime/actions";
+import { catalogNotice, stockHealthCopy } from "~/lib/realtime/health";
 import styles from "~/styles/monitor.module.css";
-
-function healthCopy(view: MonitorView) {
-  if (view.connection === "unconfigured")
-    return {
-      title: "Monitoring not connected",
-      detail: view.issue ?? "Waiting for a monitoring endpoint.",
-      tone: "muted",
-    };
-  if (view.connection === "browser_offline")
-    return {
-      title: "You’re offline",
-      detail: "We’ll reconnect when your internet connection returns.",
-      tone: "warning",
-    };
-  if (view.connection !== "connected")
-    return {
-      title:
-        view.connection === "reconnecting"
-          ? "Reconnecting…"
-          : "Connecting to the monitor…",
-      detail: view.issue ?? "Getting a fresh snapshot for your region.",
-      tone: "muted",
-    };
-  if (view.health === "healthy")
-    return {
-      title: "Monitor healthy",
-      detail: "Receiving live stock updates.",
-      tone: "healthy",
-    };
-  if (view.health === "offline")
-    return {
-      title: "The monitor is offline",
-      detail:
-        "The source has stopped reporting. Availability is unconfirmed until it recovers.",
-      tone: "warning",
-    };
-  if (view.health === "transport_silent")
-    return {
-      title: "Waiting for a fresh heartbeat",
-      detail: "The connection is open, but monitoring updates are delayed.",
-      tone: "warning",
-    };
-  return {
-    title: "Some checks are delayed",
-    detail:
-      "The monitor is connected, but some source checks are not healthy yet.",
-    tone: "warning",
-  };
-}
 
 /** Decorative, code-native hardware sketch; not a product photograph. */
 function GpuArtwork() {
@@ -186,10 +140,7 @@ function StockCard({
     monitor.connection === "connected" &&
     monitor.health !== "offline" &&
     monitor.health !== "transport_silent" &&
-    card?.status === "healthy" &&
-    card.observedAt !== null &&
-    now - card.observedAt >= 0 &&
-    now - card.observedAt < (monitor.packet?.staleAfterMs ?? 60_000);
+    isStockCheckFresh(card, now, monitor.packet?.staleAfterMs ?? 60_000);
   const available = fresh && card?.available === true;
   const known = fresh && card?.available !== null;
   const stamp = card?.lastAvailableAt;
@@ -375,7 +326,8 @@ export default function RealtimeMonitor() {
   });
   const packet = monitor.packet;
   const simulated = demo || packet?.synthetic === true;
-  const health = healthCopy(monitor);
+  const health = stockHealthCopy(monitor);
+  const catalog = catalogNotice(monitor);
   const now = monitor.serverNow ?? Date.now();
   const country = COUNTRIES[preferences.locale];
 
@@ -577,6 +529,7 @@ export default function RealtimeMonitor() {
             <div
               className={`${styles.healthPanel} ${health.tone === "healthy" ? styles.healthHealthy : health.tone === "warning" ? styles.healthWarning : ""}`}
               data-testid="monitor-health"
+              data-tone={health.tone}
             >
               <p className={styles.healthTitle} role="status">
                 <Radio
@@ -610,6 +563,18 @@ export default function RealtimeMonitor() {
                 <p className={styles.healthDetail}>{health.detail}</p>
               )}
             </div>
+            {catalog && (
+              <p
+                className={styles.catalogNotice}
+                data-testid="catalog-notice"
+                data-tone={catalog.tone}
+                role="status"
+                title="Stock checks use known SKU mappings. The catalog has not fully reverified them, so a newer SKU could be missed."
+              >
+                <Info size={14} aria-hidden="true" />
+                <span>{catalog.text}</span>
+              </p>
+            )}
             <div className={styles.columnLabels} aria-hidden="true">
               <span>Graphics card</span>
               <span>Availability</span>

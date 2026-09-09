@@ -8,7 +8,7 @@
     "dev": "next dev --webpack",
     "lint": "eslint src",
     "check": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/realtime/preferences.test.ts src/lib/realtime/protocol.test.ts src/lib/realtime/actions.test.ts scripts/check-release-env.test.mjs",
+    "test": "node --experimental-strip-types --test src/lib/realtime/preferences.test.ts src/lib/realtime/protocol.test.ts src/lib/realtime/health.test.ts src/lib/realtime/actions.test.ts scripts/check-release-env.test.mjs",
     "test:browser": "node --experimental-strip-types scripts/frontend-smoke.mjs",
     "start": "next start"
   },

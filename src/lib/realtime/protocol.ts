@@ -78,6 +78,32 @@ export const packetSchema = z
 export type Packet = z.infer<typeof packetSchema>;
 export type MonitorHealth = Packet["status"] | "waiting" | "transport_silent";
 
+/** A current usable stock result, independent of catalog completeness. */
+export function isStockCheckFresh(
+  card: CardState | undefined,
+  now: number,
+  staleAfterMs: number,
+): boolean {
+  return (
+    card?.status === "healthy" &&
+    typeof card.available === "boolean" &&
+    card.observedAt !== null &&
+    now - card.observedAt >= 0 &&
+    now - card.observedAt < staleAfterMs
+  );
+}
+
+export function unhealthyStockModels(packet: Packet, now: number): Model[] {
+  return MODELS.filter(
+    (model) =>
+      !isStockCheckFresh(
+        packet.cards.find((card) => card.model === model),
+        now,
+        packet.staleAfterMs,
+      ),
+  );
+}
+
 export function subscriptionUrl(endpoint: string, locale: Locale): string {
   let url: URL;
   try {
@@ -193,26 +219,16 @@ export class MonitorState {
       now = this.serverNow(monotonicNow);
     if (!p || now === null) return "waiting";
     if (
+      p.status === "offline" ||
       p.lastPublisherAt === null ||
+      now - p.lastPublisherAt < 0 ||
       now - p.lastPublisherAt >= p.offlineAfterMs
     )
       return "offline";
     if (monotonicNow - this.receivedAt >= 45_000) return "transport_silent";
-    if (
-      p.status === "healthy" &&
-      (p.cards.length !== MODELS.length ||
-        p.cards.some(
-          (c) =>
-            c.status !== "healthy" ||
-            c.observedAt === null ||
-            now - c.observedAt >= p.staleAfterMs,
-        ) ||
-        p.catalogStatus !== "healthy" ||
-        p.catalogCheckedAt === null ||
-        now - p.catalogCheckedAt >= p.catalogStaleAfterMs)
-    )
-      return "source_degraded";
-    return p.status;
+    // The gateway's combined status also includes catalog verification. Keep
+    // it unchanged in the packet; the main UI describes stock checking only.
+    return unhealthyStockModels(p, now).length ? "source_degraded" : "healthy";
   }
 }
 
