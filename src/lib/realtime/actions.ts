@@ -1,16 +1,22 @@
-import { storeUrl, type Model } from "./catalog.ts";
+import { storeUrl, type Locale, type Model } from "./catalog.ts";
 import type { Packet } from "./protocol.ts";
 
-/** Best-effort, opt-in store tabs. Synthetic events never navigate to a shop. */
+/** A fixed same-origin destination; never derived from a reported product URL. */
+export function previewStoreUrl(locale: Locale, model: Model): string {
+  return `/auto-open-preview?${new URLSearchParams({ region: locale, model }).toString()}`;
+}
+
+/** Best-effort, opt-in tabs. Only explicit local demos can open a test page. */
 export function autoOpenStores(
   packet: Packet,
   models: readonly Model[],
   enabled: boolean,
   open: (url: string, target: string, features: string) => unknown,
+  demo = false,
 ): number {
   if (
     !enabled ||
-    packet.synthetic ||
+    packet.synthetic !== demo ||
     packet.type === "snapshot" ||
     packet.status === "offline"
   )
@@ -26,7 +32,11 @@ export function autoOpenStores(
       packet.serverTime - card.observedAt >= 0 &&
       packet.serverTime - card.observedAt <= 15_000
     )
-      urls.add(storeUrl(packet.locale, card.productUrl));
+      urls.add(
+        demo
+          ? previewStoreUrl(packet.locale, model)
+          : storeUrl(packet.locale, card.productUrl),
+      );
   }
   for (const url of urls) {
     try {

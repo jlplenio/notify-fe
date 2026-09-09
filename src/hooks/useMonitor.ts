@@ -45,13 +45,15 @@ export function useMonitor({
   onAlerts: (packet: Packet, models: Model[]) => void;
 }) {
   const [view, setView] = useState<MonitorView>(emptyView);
+  const [demoDropAt, setDemoDropAt] = useState<number | null>(null);
   const callback = useRef(onAlerts);
   callback.current = onAlerts;
   const reconnectRef = useRef<(() => void) | null>(null);
-  const demoRef = useRef<(() => void) | null>(null);
+  const demoRef = useRef<((model: Model) => void) | null>(null);
 
   useEffect(() => {
     if (!ready) return;
+    setDemoDropAt(null);
     let disposed = false;
     const state = new MonitorState(locale, demo || allowSynthetic);
     let connection: Connection = "connecting";
@@ -95,15 +97,23 @@ export function useMonitor({
       };
       send("snapshot");
       let reset: ReturnType<typeof setTimeout> | undefined;
-      demoRef.current = () => {
-        if (positive) return;
-        positive = "5090";
-        history.set(positive, Date.now());
-        send("update", [positive]);
-        reset = setTimeout(() => {
-          positive = null;
-          send("update");
-        }, 8000);
+      let pending: ReturnType<typeof setTimeout> | undefined;
+      demoRef.current = (model) => {
+        if (positive !== null || pending !== undefined) return;
+        // Simulate an arriving alert outside the click handler. No tab is
+        // pre-opened; the browser's normal popup policy still applies.
+        setDemoDropAt(Date.now() + 6000);
+        pending = setTimeout(() => {
+          pending = undefined;
+          setDemoDropAt(null);
+          positive = model;
+          history.set(positive, Date.now());
+          send("update", [positive]);
+          reset = setTimeout(() => {
+            positive = null;
+            send("update");
+          }, 8000);
+        }, 6000);
       };
       const heartbeat = setInterval(() => send("health"), 30_000);
       const ticker = setInterval(render, 1000);
@@ -112,6 +122,7 @@ export function useMonitor({
         demoRef.current = null;
         clearInterval(heartbeat);
         clearInterval(ticker);
+        clearTimeout(pending);
         clearTimeout(reset);
       };
     }
@@ -279,6 +290,10 @@ export function useMonitor({
   return {
     ...current,
     reconnect: () => reconnectRef.current?.(),
-    simulateDrop: () => demoRef.current?.(),
+    demoCountdown:
+      demo && demoDropAt !== null
+        ? Math.max(0, Math.ceil((demoDropAt - Date.now()) / 1000))
+        : null,
+    simulateDrop: (model: Model) => demoRef.current?.(model),
   };
 }

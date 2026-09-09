@@ -6,17 +6,12 @@ import { useRouter } from "next/router";
 import {
   ArrowUpRight,
   Bell,
-  BellOff,
-  Check,
   ChevronDown,
-  Clock3,
-  Cpu,
   Github,
   Heart,
   Radio,
   RefreshCw,
   ExternalLink,
-  Users,
   Volume2,
   VolumeX,
   X,
@@ -45,10 +40,10 @@ import {
   type CardState,
   type Packet,
 } from "~/lib/realtime/protocol";
-import { autoOpenStores } from "~/lib/realtime/actions";
+import { autoOpenStores, previewStoreUrl } from "~/lib/realtime/actions";
 import styles from "~/styles/monitor.module.css";
 
-function healthCopy(view: MonitorView, preview: boolean) {
+function healthCopy(view: MonitorView) {
   if (view.connection === "unconfigured")
     return {
       title: "Monitoring not connected",
@@ -72,9 +67,8 @@ function healthCopy(view: MonitorView, preview: boolean) {
     };
   if (view.health === "healthy")
     return {
-      title: preview ? "Preview monitor is healthy" : "Monitoring is healthy",
-      detail:
-        "Stock-check target: every 10s. Alerts pushed as soon as detected.",
+      title: "Monitor healthy",
+      detail: "Receiving live stock updates.",
       tone: "healthy",
     };
   if (view.health === "offline")
@@ -98,18 +92,94 @@ function healthCopy(view: MonitorView, preview: boolean) {
   };
 }
 
+/** Decorative, code-native hardware sketch; not a product photograph. */
+function GpuArtwork() {
+  return (
+    <svg
+      viewBox="0 0 112 60"
+      className={styles.gpuArtwork}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect
+        x="3"
+        y="8"
+        width="106"
+        height="44"
+        rx="6"
+        fill="var(--hardware-fill)"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+      <path
+        d="M5 10h30l39 40h32M5 50h30l39-40h32"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        opacity=".55"
+      />
+      {[29, 83].map((cx) => (
+        <g key={cx}>
+          <circle
+            cx={cx}
+            cy="30"
+            r="17"
+            fill="var(--hardware-fill)"
+            stroke="currentColor"
+            strokeWidth=".8"
+          />
+          <circle
+            cx={cx}
+            cy="30"
+            r="13.8"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth=".5"
+            opacity=".5"
+          />
+          {Array.from({ length: 9 }, (_, i) => (
+            <path
+              key={i}
+              d={`M${cx} 26c2-6 8-10 11-6-5 0-7 5-7 10`}
+              transform={`rotate(${i * 40} ${cx} 30)`}
+              fill="currentColor"
+              opacity=".55"
+            />
+          ))}
+          <circle
+            cx={cx}
+            cy="30"
+            r="4"
+            fill="var(--hardware-fill)"
+            stroke="currentColor"
+            strokeWidth=".8"
+          />
+        </g>
+      ))}
+      <path
+        d="M4 17H1v26h3M45 52v3h20v-3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      />
+    </svg>
+  );
+}
+
 function StockCard({
   model,
   card,
   selected,
   monitor,
   onToggle,
+  demo,
 }: {
   model: Model;
   card?: CardState;
   selected: boolean;
   monitor: MonitorView;
   onToggle: () => void;
+  demo: boolean;
 }) {
   const now = monitor.serverNow ?? Date.now();
   const fresh =
@@ -130,15 +200,10 @@ function StockCard({
       data-testid={`card-${model}`}
     >
       <div className={styles.cardIdentity}>
-        <span className={styles.chipIcon} aria-hidden="true">
-          <Cpu size={25} strokeWidth={1.4} />
-        </span>
-        <div>
-          <h3 className={styles.model}>
-            RTX <span>{model}</span>
-          </h3>
-          <p className={styles.edition}>Founders Edition</p>
-        </div>
+        <GpuArtwork />
+        <h3 className={styles.model}>
+          <span className={styles.rtx}>RTX</span> {model}
+        </h3>
       </div>
       <div className={styles.cardAvailability}>
         <span
@@ -157,42 +222,42 @@ function StockCard({
         {available && monitor.packet && (
           <a
             className={styles.shopLink}
-            href={storeUrl(monitor.packet.locale, card?.productUrl)}
+            href={
+              demo
+                ? previewStoreUrl(monitor.packet.locale, model)
+                : storeUrl(monitor.packet.locale, card?.productUrl)
+            }
             target="_blank"
             rel="noopener noreferrer"
           >
-            Shop RTX {model} <ArrowUpRight size={13} />
+            {demo ? "Demo shop" : `Shop RTX ${model}`}{" "}
+            <ArrowUpRight size={13} />
           </a>
         )}
       </div>
-      <div className={styles.lastSeen}>
-        <div className={styles.smallLabel}>
-          <Clock3 size={12} aria-hidden="true" /> Last seen in stock
-        </div>
-        <p className={styles.lastSeenTime} data-testid={`last-seen-${model}`}>
+      <dl className={styles.lastSeen}>
+        <dt className={styles.rowFieldLabel}>Last in stock</dt>
+        <dd className={styles.lastSeenTime} data-testid={`last-seen-${model}`}>
           {relativeTime(stamp, now)}
-        </p>
-        {date ? (
-          <time
-            dateTime={date.toISOString()}
-            title={date.toLocaleString(undefined, { timeZoneName: "short" })}
-            className={styles.exactTime}
-          >
-            {date.toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </time>
-        ) : (
-          <p className={styles.exactTime}>No sighting recorded</p>
+        </dd>
+        {date && (
+          <dd>
+            <time
+              dateTime={date.toISOString()}
+              title={date.toLocaleString(undefined, { timeZoneName: "short" })}
+              className={styles.exactTime}
+            >
+              {date.toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </time>
+          </dd>
         )}
-      </div>
+      </dl>
       <div className={styles.cardBottom}>
-        <label className={styles.notifyLabel} htmlFor={`notify-${model}`}>
-          {selected ? <Bell size={14} /> : <BellOff size={14} />} Notify me
-        </label>
         <button
           id={`notify-${model}`}
           type="button"
@@ -223,6 +288,7 @@ export default function RealtimeMonitor() {
     models: Model[];
     at: number;
     synthetic: boolean;
+    demo: boolean;
     url: string;
     autoOpenAttempted: boolean;
   } | null>(null);
@@ -275,22 +341,27 @@ export default function RealtimeMonitor() {
     const selected = models.filter((model) =>
       preferences.models.includes(model),
     );
-    if (!selected.length) return;
+    const firstModel = selected[0];
+    if (!firstModel) return;
     setLastAlert({
       models: selected,
       at: packet.serverTime,
       synthetic: packet.synthetic,
+      demo,
       autoOpenAttempted:
         autoOpenStores(
           packet,
           selected,
           preferences.autoOpen,
           (url, target, features) => window.open(url, target, features),
+          demo,
         ) > 0,
-      url: storeUrl(
-        packet.locale,
-        packet.cards.find((c) => c.model === selected[0])?.productUrl,
-      ),
+      url: demo
+        ? previewStoreUrl(packet.locale, firstModel)
+        : storeUrl(
+            packet.locale,
+            packet.cards.find((c) => c.model === firstModel)?.productUrl,
+          ),
     });
     if (preferences.soundEnabled) void sound.play();
   };
@@ -304,7 +375,7 @@ export default function RealtimeMonitor() {
   });
   const packet = monitor.packet;
   const simulated = demo || packet?.synthetic === true;
-  const health = healthCopy(monitor, simulated);
+  const health = healthCopy(monitor);
   const now = monitor.serverNow ?? Date.now();
   const country = COUNTRIES[preferences.locale];
 
@@ -358,8 +429,8 @@ export default function RealtimeMonitor() {
           <Link href="/" className={styles.brand} aria-label="Notify-FE home">
             <Image
               src="/favicon-192x192.png"
-              width={34}
-              height={34}
+              width={30}
+              height={30}
               alt=""
               priority
             />
@@ -368,20 +439,41 @@ export default function RealtimeMonitor() {
             </span>
           </Link>
           <div className={styles.headerRight}>
-            <span className={styles.headerNote}>For people. Not scalpers.</span>
+            <span>For people. Not scalpers.</span>
             <ModeToggle />
           </div>
         </header>
         <main>
-          <div className={styles.intro}>
-            <p className={styles.eyebrow}>
-              <span /> THE NEXT DROP, WITHOUT THE REFRESH.
-            </p>
-            <h1>Your next Founders Edition.</h1>
-            <p>
-              Pick your region. Choose your cards. We’ll keep an eye on the
-              stock.
-            </p>
+          <div className={styles.masthead}>
+            <div className={styles.intro}>
+              <h1>
+                Founders <em>Edition.</em>
+              </h1>
+              <p>RTX 50 series stock alerts</p>
+            </div>
+            <div
+              className={styles.audience}
+              data-testid="connection-counts"
+              aria-label="Live listener counts"
+              title="Active alert subscriptions at the last report. One person opening multiple tabs counts more than once."
+            >
+              <div>
+                <span className={styles.audienceNumber}>
+                  {packet ? packet.clients.total.toLocaleString() : "—"}
+                </span>
+                <span className={styles.audienceLabel}>Live listeners</span>
+              </div>
+              <div>
+                <span
+                  className={`${styles.audienceNumber} ${styles.localNumber}`}
+                >
+                  {packet ? packet.clients.locale.toLocaleString() : "—"}
+                </span>
+                <span className={styles.audienceLabel}>
+                  Listening in {country.name}
+                </span>
+              </div>
+            </div>
           </div>
           {simulated && (
             <div
@@ -390,170 +482,139 @@ export default function RealtimeMonitor() {
               data-testid="demo-banner"
             >
               <span>
-                <strong>{demo ? "Preview mode" : "Staging test data"}</strong> ·
-                Availability, history and statistics are simulated.
+                <strong>{demo ? "Preview" : "Staging test data"}</strong> ·
+                Simulated data
               </span>
               {demo && (
                 <button
                   type="button"
-                  onClick={monitor.simulateDrop}
-                  disabled={packet?.cards.some((c) => c.available === true)}
+                  onClick={() => {
+                    const model = DISPLAY_MODELS.find((m) =>
+                      preferences.models.includes(m),
+                    );
+                    if (model) monitor.simulateDrop(model);
+                  }}
+                  title="A selected card will drop after six seconds. Auto-open uses a safe demo shop in a new tab; your browser may require popup permission."
+                  disabled={
+                    monitor.demoCountdown !== null ||
+                    preferences.models.length === 0 ||
+                    packet?.cards.some((c) => c.available === true)
+                  }
                 >
-                  Simulate a drop <ArrowUpRight size={13} />
+                  {monitor.demoCountdown !== null
+                    ? `Drop in ${monitor.demoCountdown}s…`
+                    : "Simulate a drop"}{" "}
+                  <ArrowUpRight size={14} />
                 </button>
               )}
             </div>
           )}
+
           <section
             className={styles.watchlist}
             aria-labelledby="watchlist-title"
           >
-            <div className={styles.toolbar}>
-              <div>
-                <label htmlFor="locale" className={styles.fieldLabel}>
-                  YOUR REGION
+            <h2 id="watchlist-title" className={styles.srOnly}>
+              Your watchlist
+            </h2>
+            <div className={styles.toolbar} data-testid="alert-settings">
+              <div className={styles.localeField} data-testid="region-selector">
+                <label htmlFor="locale" className={styles.srOnly}>
+                  Your region
                 </label>
-                <div
-                  className={styles.localeField}
-                  data-testid="region-selector"
+                <span className={styles.countryCode} aria-hidden="true">
+                  {country.code}
+                </span>
+                <select
+                  id="locale"
+                  value={preferences.locale}
+                  disabled={!ready}
+                  onChange={(event) => {
+                    if (isLocale(event.target.value))
+                      changeLocale(event.target.value);
+                  }}
                 >
-                  <span className={styles.countryCode} aria-hidden="true">
-                    {country.code}
-                  </span>
-                  <select
-                    id="locale"
-                    value={preferences.locale}
-                    disabled={!ready}
-                    onChange={(event) => {
-                      if (isLocale(event.target.value))
-                        changeLocale(event.target.value);
-                    }}
-                  >
-                    {LOCALES.map((locale) => (
-                      <option key={locale} value={locale}>
-                        {COUNTRIES[locale].name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} aria-hidden="true" />
-                </div>
+                  {LOCALES.map((locale) => (
+                    <option key={locale} value={locale}>
+                      {COUNTRIES[locale].name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={18} aria-hidden="true" />
               </div>
-              <div className={styles.alertControls}>
-                <div className={styles.controlButtons}>
-                  <button
-                    type="button"
-                    onClick={changeSound}
-                    aria-pressed={preferences.soundEnabled}
-                    className={`${styles.soundButton} ${preferences.soundEnabled ? styles.soundEnabled : ""}`}
-                    disabled={!ready}
-                  >
-                    {preferences.soundEnabled ? (
-                      <Volume2 size={17} />
-                    ) : (
-                      <VolumeX size={17} />
-                    )}
-                    {preferences.soundEnabled ? "Sound on" : "Sound off"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => update({ autoOpen: !preferences.autoOpen })}
-                    aria-pressed={preferences.autoOpen}
-                    title="Open shop tabs for new alerts on selected cards. Your browser must allow popups."
-                    className={`${styles.soundButton} ${preferences.autoOpen ? styles.soundEnabled : ""}`}
-                    disabled={!ready}
-                  >
-                    <ExternalLink size={15} />
-                    {preferences.autoOpen ? "Auto-open on" : "Auto-open off"}
-                  </button>
-                </div>
-                <div className={styles.soundHint}>
-                  <span>
-                    {!preferences.soundEnabled
-                      ? "Alerts are muted"
-                      : sound.blocked
-                        ? "Browser blocked audio — test to retry"
-                        : sound.ready
-                          ? "Audio ready in this tab"
-                          : "Sound enabled · browser may need a click"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void sound.enable();
-                    }}
-                  >
-                    Test sound
-                  </button>
-                </div>
+              <div className={styles.toolbarActions}>
+                <button
+                  type="button"
+                  onClick={changeSound}
+                  aria-pressed={preferences.soundEnabled}
+                  className={`${styles.controlButton} ${preferences.soundEnabled ? styles.controlEnabled : ""}`}
+                  disabled={!ready}
+                >
+                  {preferences.soundEnabled ? (
+                    <Volume2 size={18} />
+                  ) : (
+                    <VolumeX size={18} />
+                  )}
+                  {preferences.soundEnabled ? "Sound on" : "Sound off"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => update({ autoOpen: !preferences.autoOpen })}
+                  aria-pressed={preferences.autoOpen}
+                  title={
+                    demo
+                      ? "Test auto-open using a same-site demo shop. Your browser must allow popups."
+                      : "Open the store on new alerts. Your browser must allow popups; server test alerts never open a shop."
+                  }
+                  className={`${styles.controlButton} ${preferences.autoOpen ? styles.controlEnabled : ""}`}
+                  disabled={!ready}
+                >
+                  <ExternalLink size={17} />
+                  {preferences.autoOpen ? "Auto-open on" : "Auto-open off"}
+                </button>
               </div>
             </div>
-            <div className={styles.monitorOverview}>
-              <div
-                className={`${styles.healthPanel} ${health.tone === "healthy" ? styles.healthHealthy : health.tone === "warning" ? styles.healthWarning : ""}`}
-                data-testid="monitor-health"
+            <div
+              className={`${styles.healthPanel} ${health.tone === "healthy" ? styles.healthHealthy : health.tone === "warning" ? styles.healthWarning : ""}`}
+              data-testid="monitor-health"
+            >
+              <p className={styles.healthTitle} role="status">
+                <Radio
+                  size={16}
+                  className={styles.healthBeacon}
+                  aria-hidden="true"
+                />{" "}
+                {health.title}
+              </p>
+              <span
+                className={styles.healthReport}
+                data-testid="last-heartbeat"
+                title="The monitor sends a heartbeat about every 30 seconds. Availability changes are pushed as soon as detected."
               >
-                <div className={styles.healthMain}>
-                  <span className={styles.healthBeacon} aria-hidden="true">
-                    <Radio size={19} />
-                  </span>
-                  <div>
-                    <p className={styles.healthTitle} role="status">
-                      {health.title}
-                    </p>
-                    <p className={styles.healthDetail}>{health.detail}</p>
-                  </div>
-                  {health.tone === "warning" &&
-                    monitor.connection !== "browser_offline" && (
-                      <button
-                        type="button"
-                        className={styles.retry}
-                        onClick={monitor.reconnect}
-                        aria-label="Reconnect to monitor"
-                      >
-                        <RefreshCw size={16} />
-                      </button>
-                    )}
-                </div>
-                <p
-                  className={styles.healthReport}
-                  title="The monitor sends a health report about every 30 seconds, separately from its 10-second stock-check target."
-                >
-                  {packet?.lastPublisherAt != null
-                    ? `Health report · ${relativeTime(packet.lastPublisherAt, now).toLowerCase()} · every ~30s`
-                    : "Waiting for the first health report"}
-                </p>
-              </div>
-              <div
-                className={styles.audience}
-                data-testid="connection-counts"
-                aria-label="Connected tabs at the latest server update"
-                title="Connections at the latest server update; tabs, not unique people."
-              >
-                <div>
-                  <span className={styles.audienceNumber}>
-                    {packet ? packet.clients.total.toLocaleString() : "—"}
-                  </span>
-                  <span>
-                    <Users size={13} /> Connected tabs
-                  </span>
-                </div>
-                <div className={styles.audienceLocal}>
-                  <span className={styles.audienceNumber}>
-                    {packet ? packet.clients.locale.toLocaleString() : "—"}
-                  </span>
-                  <span>In {country.name}</span>
-                </div>
-              </div>
-            </div>
-            <div className={styles.sectionHeading}>
-              <h2 id="watchlist-title">
-                Your watchlist <span>RTX 50 SERIES</span>
-              </h2>
-              <span className={styles.selectionCount}>
-                {preferences.models.length === 0
-                  ? "Notifications paused"
-                  : `${preferences.models.length} of 3 alerts on`}
+                {packet?.lastPublisherAt != null
+                  ? `Last heartbeat · ${relativeTime(packet.lastPublisherAt, now).toLowerCase()}`
+                  : "Last heartbeat · waiting"}
               </span>
+              {health.tone === "warning" &&
+                monitor.connection !== "browser_offline" && (
+                  <button
+                    type="button"
+                    className={styles.retry}
+                    onClick={monitor.reconnect}
+                    aria-label="Reconnect to monitor"
+                  >
+                    <RefreshCw size={16} />
+                  </button>
+                )}
+              {health.tone !== "healthy" && (
+                <p className={styles.healthDetail}>{health.detail}</p>
+              )}
+            </div>
+            <div className={styles.columnLabels} aria-hidden="true">
+              <span>Graphics card</span>
+              <span>Availability</span>
+              <span className={styles.historyHeading}>Last in stock</span>
+              <span>Alert</span>
             </div>
             <div className={styles.cardGrid}>
               {DISPLAY_MODELS.map((model) => (
@@ -563,6 +624,7 @@ export default function RealtimeMonitor() {
                   card={packet?.cards.find((card) => card.model === model)}
                   selected={preferences.models.includes(model)}
                   monitor={monitor}
+                  demo={demo}
                   onToggle={() =>
                     update({ models: toggleModel(preferences.models, model) })
                   }
@@ -570,20 +632,98 @@ export default function RealtimeMonitor() {
               ))}
             </div>
             <div className={styles.watchlistFooter}>
-              <span>
-                <Check size={14} />
-                {storageAvailable
-                  ? "Your region and alert choices are saved on this device."
-                  : "Settings can’t be saved in this browser. They’ll reset next visit."}
-              </span>
+              <div className={styles.soundHint}>
+                <span
+                  role="status"
+                  className={
+                    !sound.ready && !sound.blocked && preferences.soundEnabled
+                      ? styles.audioPrompt
+                      : undefined
+                  }
+                >
+                  {!preferences.soundEnabled
+                    ? "Alerts are muted"
+                    : sound.blocked
+                      ? "Browser blocked audio — test to retry"
+                      : sound.ready
+                        ? "Audio ready in this tab"
+                        : "Keep this tab open."}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void sound.enable();
+                  }}
+                >
+                  Test sound
+                </button>
+                <label
+                  className={styles.volumeControl}
+                  htmlFor="volume"
+                  title={`Alert volume: ${Math.round(preferences.volume * 100)}%`}
+                >
+                  <span className={styles.srOnly}>Alert volume</span>
+                  <Volume2 size={14} aria-hidden="true" />
+                  <input
+                    id="volume"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={preferences.volume}
+                    aria-valuetext={`${Math.round(preferences.volume * 100)}%`}
+                    onChange={(event) =>
+                      update({ volume: Number(event.target.value) })
+                    }
+                  />
+                </label>
+              </div>
               <a
                 href={storeUrl(preferences.locale)}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Visit NVIDIA store <ArrowUpRight size={14} />
+                NVIDIA store <ArrowUpRight size={14} />
               </a>
             </div>
+          </section>
+          {!storageAvailable && (
+            <p className={styles.storageWarning} role="status">
+              Settings can’t be saved in this browser. They’ll reset next visit.
+            </p>
+          )}
+          {preferences.models.length === 0 && (
+            <p className={styles.storageWarning} role="status">
+              Notifications paused. Select a card to receive alerts.
+            </p>
+          )}
+          <section
+            className={styles.supportBanner}
+            aria-labelledby="support-title"
+            data-testid="support-banner"
+          >
+            <Heart
+              className={styles.supportIcon}
+              size={22}
+              aria-hidden="true"
+            />
+            <div className={styles.supportCopy}>
+              <h2 id="support-title">
+                Got your card? <span aria-hidden="true">🎉</span>
+              </h2>
+              <p>
+                Add your card + country to your Ko-fi message. Every tip helps
+                keep the servers running.
+              </p>
+            </div>
+            <a
+              href="https://ko-fi.com/timesaved"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Say thanks on Ko-fi"
+            >
+              Say thanks <ArrowUpRight size={15} aria-hidden="true" />
+            </a>
           </section>
           <details className={styles.about}>
             <summary>
@@ -591,56 +731,31 @@ export default function RealtimeMonitor() {
             </summary>
             <div className={styles.aboutContent}>
               <p>
-                Sound is on by default; your saved mute choice is respected.
-                Browsers may require a click before playing an alert, so test
-                the sound before waiting. Keep this tab open. Sleeping devices
-                or suspended background tabs can delay alerts.
+                Keep this tab open and test the sound. Sleeping devices and
+                suspended tabs can delay alerts. Your region, card choices and
+                settings are saved on this device.
               </p>
               <p>
-                The first snapshot and reconnects are quiet: only new, verified
-                updates for your selected cards trigger an alert. “Last seen in
-                stock” is the latest confirmed sighting, not a promise that a
-                card is still available. Exact times use your device’s time
-                zone.
+                Heartbeats arrive about every 30 seconds. Stock changes are
+                pushed as soon as detected. “Live listeners” counts connections,
+                not unique people.
               </p>
               <p>
-                The shared monitor targets a stock check every 10 seconds per
-                card. Health reports arrive separately, about every 30 seconds;
-                they are not the stock-check interval. Availability changes are
-                pushed as soon as detected. Delays or source failures are shown
-                in the health panel. Connection counts represent tabs, not
-                people.
+                Last in stock is the latest confirmed sighting, not a guarantee
+                of availability. Times use your device’s time zone. First
+                snapshots and reconnects are quiet; only new updates for
+                selected cards alert.
               </p>
               <p>
-                Auto-open is optional and saved on this device. It opens shop
-                tabs only for new, selected alerts, never on a first snapshot or
-                reconnect. Allow popups for this site if you use it. If no tab
-                opens, use the alert’s store link. Preview and staging test
-                alerts never auto-open a real shop.
+                Auto-open opens the store on new selected alerts. Allow popups
+                for this site, or use the store link if a tab doesn’t open. Test
+                alerts never auto-open a real shop. In local preview, Simulate a
+                drop tests a demo shop after a six-second countdown.
               </p>
-              <label className={styles.volumeLabel} htmlFor="volume">
-                Alert volume{" "}
-                <input
-                  id="volume"
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={preferences.volume}
-                  onChange={(event) =>
-                    update({ volume: Number(event.target.value) })
-                  }
-                />
-                <span>{Math.round(preferences.volume * 100)}%</span>
-              </label>
             </div>
           </details>
         </main>
         <footer className={styles.footer}>
-          <div>
-            <span className={styles.footerBrand}>Notify-FE</span>
-            <p>Independent. Community-built. Not affiliated with NVIDIA.</p>
-          </div>
           <nav aria-label="Project links">
             {env.NEXT_PUBLIC_ENABLE_DEMO === "true" && (
               <button type="button" onClick={toggleDemo}>
@@ -652,16 +767,7 @@ export default function RealtimeMonitor() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Github size={15} />
-              Source
-            </a>
-            <a
-              href="https://ko-fi.com/timesaved"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Heart size={15} />
-              Support
+              <Github size={14} /> Source
             </a>
           </nav>
         </footer>
@@ -682,20 +788,25 @@ export default function RealtimeMonitor() {
             </strong>
             <p>
               {country.name} · {relativeTime(lastAlert.at, now).toLowerCase()} ·
-              Check the store for current availability.
+              {lastAlert.demo
+                ? "Demo only — no real stock or purchase."
+                : "Check the store for current availability."}
             </p>
             {lastAlert.autoOpenAttempted && (
               <p className={styles.popupHint}>
-                No shop tab? Allow popups for this site or open the store below.
+                {lastAlert.demo
+                  ? "No demo tab? Allow popups for this site and retry, or open it below."
+                  : "No shop tab? Allow popups for this site or open the store below."}
               </p>
             )}
-            {lastAlert.synthetic && preferences.autoOpen && (
+            {lastAlert.synthetic && !lastAlert.demo && preferences.autoOpen && (
               <p className={styles.popupHint}>
                 Auto-open is skipped for test alerts.
               </p>
             )}
             <a href={lastAlert.url} target="_blank" rel="noopener noreferrer">
-              Open store <ArrowUpRight size={14} />
+              {lastAlert.demo ? "Open demo shop" : "Open store"}{" "}
+              <ArrowUpRight size={14} />
             </a>
           </div>
           <button

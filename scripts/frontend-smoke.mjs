@@ -40,14 +40,33 @@ async function waitFor(check, message) {
   throw new Error(message);
 }
 
-async function setup(context, blockedStorage = false, realAudio = false) {
+async function setup(
+  context,
+  blockedStorage = false,
+  realAudio = false,
+  realPopups = false,
+) {
   await context.addInitScript(
-    ({ blockedStorage, realAudio }) => {
+    ({ blockedStorage, realAudio, realPopups }) => {
       window.__testAudioPlays = 0;
       window.__testAudioRates = [];
       window.__testOpened = [];
+      window.__testOpenActivation = [];
+      const nativeOpen = window.open.bind(window);
       window.open = (...args) => {
         window.__testOpened.push(args);
+        window.__testOpenActivation.push(navigator.userActivation.isActive);
+        if (realPopups) {
+          const target = new URL(args[0], location.href);
+          if (
+            target.origin !== location.origin ||
+            target.pathname !== "/auto-open-preview"
+          )
+            throw new Error(
+              "Only same-origin demo tabs are allowed in this test",
+            );
+          return nativeOpen(...args);
+        }
         return null;
       };
       const nativePlay = HTMLMediaElement.prototype.play;
@@ -68,7 +87,7 @@ async function setup(context, blockedStorage = false, realAudio = false) {
           },
         });
     },
-    { blockedStorage, realAudio },
+    { blockedStorage, realAudio, realPopups },
   );
   context.on("page", (page) =>
     page.on("pageerror", (error) => errors.push(error.message)),
@@ -79,6 +98,10 @@ async function setup(context, blockedStorage = false, realAudio = false) {
     unexpectedRequests.push(url.hostname);
     return route.abort();
   });
+  // The local demo never opens a monitor socket. Playwright's WebSocket-routing
+  // shim can renew user activation while forwarding Next's HMR messages, which
+  // would artificially allow a popup. Use native sockets for real-policy tests.
+  if (realPopups) return;
   await context.routeWebSocket(
     (url) => url.pathname === "/v1/ws",
     (socket) => {
@@ -143,7 +166,7 @@ try {
   await page.goto(new URL("/?region=de-de", base).href);
   await page
     .getByTestId("monitor-health")
-    .getByText("Preview monitor is healthy", { exact: true })
+    .getByText("Monitor healthy", { exact: true })
     .waitFor();
   assert.equal(await page.getByRole("switch").count(), 3);
   for (const model of ["5090", "5080", "5070"])
@@ -169,17 +192,87 @@ try {
       .count(),
     0,
   );
+  assert.equal(
+    await page.getByText("10s check target", { exact: true }).count(),
+    0,
+  );
   await page
-    .getByText(
-      "Stock-check target: every 10s. Alerts pushed as soon as detected.",
-    )
+    .getByTestId("last-heartbeat")
+    .getByText(/^Last heartbeat ·/)
     .waitFor();
+  assert.equal(
+    await page
+      .getByText("Independent. Not affiliated with NVIDIA.", { exact: true })
+      .count(),
+    0,
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Alert settings", exact: true })
+      .count(),
+    0,
+  );
+  const support = page.getByTestId("support-banner");
+  await support
+    .getByRole("heading", { name: "Got your card?", exact: true })
+    .waitFor();
+  assert.match(await support.innerText(), /card \+ country/);
+  assert.match(await support.innerText(), /servers running/);
+  const supportLink = support.getByRole("link", {
+    name: "Say thanks on Ko-fi",
+  });
+  assert.equal(
+    await supportLink.getAttribute("href"),
+    "https://ko-fi.com/timesaved",
+  );
+  assert.equal(await supportLink.getAttribute("rel"), "noopener noreferrer");
   const rows = await Promise.all(
     ["5090", "5080", "5070"].map((m) =>
       page.getByTestId(`card-${m}`).boundingBox(),
     ),
   );
-  assert.ok(rows.every((row) => row.width > 700 && row.height < 125));
+  assert.ok(rows.every((row) => row.width > 700 && row.height <= 90));
+  const settingsBox = await page.getByTestId("alert-settings").boundingBox();
+  assert.ok(
+    settingsBox.y + settingsBox.height < rows[0].y && settingsBox.height < 90,
+    "Alert controls are a compact toolbar above the rows, not a sidebar",
+  );
+  assert.ok(
+    rows[2].y + rows[2].height < 670,
+    "All cards fit in a short desktop view",
+  );
+  assert.ok(
+    await page
+      .getByTestId("stock-5090")
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 14),
+  );
+  assert.ok(
+    await page
+      .getByTestId("card-5090")
+      .locator("time")
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize) >= 12),
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Auto-open off", exact: true })
+      .count(),
+    1,
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Auto-open off", exact: true })
+      .getAttribute("aria-pressed"),
+    "false",
+  );
+  await page.getByRole("slider", { name: "Alert volume" }).focus();
+  await page.keyboard.press("ArrowRight");
+  assert.equal(await page.locator("#volume").inputValue(), "0.55");
+  assert.equal(
+    await page.getByText("Connected tabs", { exact: true }).count(),
+    0,
+  );
+  await page.getByText("Live listeners", { exact: true }).waitFor();
+  await page.getByText("Listening in Germany", { exact: true }).waitFor();
   assert.ok(rows[0].y < rows[1].y && rows[1].y < rows[2].y);
   assert.ok(
     (await page.getByTestId("connection-counts").boundingBox()).y < rows[0].y,
@@ -207,6 +300,11 @@ try {
     () => document.querySelector("#locale").value === "de-de",
   );
   assert.equal(
+    await page.locator("#volume").inputValue(),
+    "0.55",
+    "Volume survives a return visit",
+  );
+  assert.equal(
     await page
       .getByRole("switch", { name: "Notify me about RTX 5090" })
       .getAttribute("aria-checked"),
@@ -214,7 +312,7 @@ try {
   );
   await page
     .getByTestId("monitor-health")
-    .getByText("Preview monitor is healthy", { exact: true })
+    .getByText("Monitor healthy", { exact: true })
     .waitFor();
   publish("de-de", "5090");
   await page
@@ -276,7 +374,7 @@ try {
   );
   await page
     .getByTestId("monitor-health")
-    .getByText("Preview monitor is healthy", { exact: true })
+    .getByText("Monitor healthy", { exact: true })
     .waitFor();
   assert.equal(await page.getByTestId("availability-alert").count(), 0);
   assert.equal(await page.evaluate(() => window.__testAudioPlays), 2);
@@ -320,9 +418,7 @@ try {
   await setup(actionsContext);
   const actionPage = await actionsContext.newPage();
   await actionPage.goto(new URL("/?region=de-de", base).href);
-  await actionPage
-    .getByText("Preview monitor is healthy", { exact: true })
-    .waitFor();
+  await actionPage.getByText("Monitor healthy", { exact: true }).waitFor();
   publish("de-de", "5090", "update", false);
   await actionPage.getByTestId("availability-alert").waitFor();
   assert.equal(
@@ -353,9 +449,7 @@ try {
     .click();
   assert.equal(await actionPage.evaluate(() => window.__testOpened.length), 1);
   await actionPage.reload();
-  await actionPage
-    .getByText("Monitoring is healthy", { exact: true })
-    .waitFor();
+  await actionPage.getByText("Monitor healthy", { exact: true }).waitFor();
   assert.equal(
     await actionPage
       .getByRole("button", { name: "Auto-open on", exact: true })
@@ -374,9 +468,7 @@ try {
   await actionPage
     .getByRole("button", { name: "Sound off", exact: true })
     .waitFor();
-  await actionPage
-    .getByText("Monitoring is healthy", { exact: true })
-    .waitFor();
+  await actionPage.getByText("Monitor healthy", { exact: true }).waitFor();
   publish("de-de", null, "update", false);
   publish("de-de", "5090", "update", false);
   await waitFor(
@@ -414,9 +506,7 @@ try {
   await setup(audioContext, false, true);
   const audioPage = await audioContext.newPage();
   await audioPage.goto(new URL("/?region=de-de", base).href);
-  await audioPage
-    .getByText("Preview monitor is healthy", { exact: true })
-    .waitFor();
+  await audioPage.getByText("Monitor healthy", { exact: true }).waitFor();
   publish("de-de", "5090");
   await audioPage
     .getByText(
@@ -444,9 +534,7 @@ try {
   await setup(deniedContext);
   const deniedPage = await deniedContext.newPage();
   await deniedPage.goto(new URL("/?region=de-de", base).href);
-  await deniedPage
-    .getByText("Preview monitor is healthy", { exact: true })
-    .waitFor();
+  await deniedPage.getByText("Monitor healthy", { exact: true }).waitFor();
   await deniedPage.evaluate(() => {
     window.__testRejectAudio = true;
   });
@@ -482,7 +570,7 @@ try {
   await visual.goto(new URL("/?demo=1&region=de-de", base).href);
   await visual
     .getByTestId("demo-banner")
-    .getByText("Preview mode", { exact: true })
+    .getByText("Preview", { exact: true })
     .waitFor();
   await visual
     .getByTestId("last-seen-5090")
@@ -514,8 +602,23 @@ try {
     fullPage: true,
     animations: "disabled",
   });
-  for (const width of [320, 390, 768, 1365]) {
+
+  for (const width of [320, 390, 600, 601, 768, 1365]) {
     await visual.setViewportSize({ width, height: 900 });
+    const soundButton = await visual
+      .getByRole("button", { name: "Sound on", exact: true })
+      .boundingBox();
+    const autoButton = await visual
+      .getByRole("button", { name: "Auto-open off", exact: true })
+      .boundingBox();
+    assert.ok(
+      Math.abs(soundButton.y - autoButton.y) < 1,
+      "Sound and auto-open stay side by side",
+    );
+    assert.ok(
+      soundButton.height >= 44 && autoButton.height >= 44,
+      "Alert buttons remain touch-sized",
+    );
     assert.ok(
       await visual.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -526,7 +629,11 @@ try {
   await visual
     .getByRole("button", { name: "Auto-open off", exact: true })
     .click();
+  await visual.clock.install();
   await visual.getByRole("button", { name: "Simulate a drop" }).click();
+  assert.equal(await visual.evaluate(() => window.__testOpened.length), 0);
+  await visual.getByRole("button", { name: /Drop in \ds…/ }).waitFor();
+  await visual.clock.fastForward(6100);
   await visual.getByTestId("availability-alert").waitFor();
   assert.match(
     await visual.getByTestId("availability-alert").innerText(),
@@ -534,13 +641,179 @@ try {
   );
   assert.equal(
     await visual.evaluate(() => window.__testOpened.length),
-    0,
-    "Sample drops must never open a real shop",
+    1,
+    "Explicit preview can attempt one demo tab",
   );
+  assert.deepEqual(await visual.evaluate(() => window.__testOpened[0]), [
+    "/auto-open-preview?region=de-de&model=5090",
+    "_blank",
+    "noopener,noreferrer",
+  ]);
+  assert.equal(
+    await visual
+      .getByRole("link", { name: "Open demo shop", exact: true })
+      .getAttribute("href"),
+    "/auto-open-preview?region=de-de&model=5090",
+  );
+  await visual.clock.fastForward(31_000);
+  assert.equal(
+    await visual.evaluate(() => window.__testOpened.length),
+    1,
+    "Demo heartbeat must not repeat an auto-open",
+  );
+
+  await visual
+    .getByRole("button", { name: "Auto-open on", exact: true })
+    .click();
+  await visual.getByRole("button", { name: "Simulate a drop" }).click();
+  await visual.clock.fastForward(6100);
+  assert.equal(
+    await visual.evaluate(() => window.__testOpened.length),
+    1,
+    "Auto-open off is respected for demos",
+  );
+  await visual.clock.fastForward(8100);
+  await visual.getByRole("button", { name: "Simulate a drop" }).click();
+  await visual.locator("#locale").selectOption("fr-fr");
+  await visual.waitForURL((url) => url.searchParams.get("region") === "fr-fr");
+  await visual.clock.fastForward(6100);
+  assert.equal(
+    await visual.getByTestId("availability-alert").count(),
+    0,
+    "Region changes cancel queued demos",
+  );
+  assert.equal(await visual.evaluate(() => window.__testOpened.length), 1);
+
+  await visual
+    .getByRole("button", { name: "Auto-open off", exact: true })
+    .click();
+  await visual.getByRole("button", { name: "Simulate a drop" }).click();
+  await visual
+    .getByRole("switch", { name: "Notify me about RTX 5090" })
+    .click();
+  await visual.clock.fastForward(6100);
+  assert.equal(
+    await visual.evaluate(() => window.__testOpened.length),
+    1,
+    "Deselecting a queued card suppresses its popup",
+  );
+  await visual.clock.fastForward(8100);
+  await visual.getByRole("button", { name: "Simulate a drop" }).click();
+  await visual.clock.fastForward(6100);
+  assert.deepEqual(await visual.evaluate(() => window.__testOpened[1]), [
+    "/auto-open-preview?region=fr-fr&model=5080",
+    "_blank",
+    "noopener,noreferrer",
+  ]);
   console.log(
     "PASS: clearly labelled, server-free demo; light/dark themes and 320–1365px layouts",
   );
   await preview.close();
+
+  phase = "real delayed demo popup with popups allowed by browser launch";
+  // Isolate native timers from the earlier fast-forwarded browser scenarios.
+  const popupBrowser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.CHROMIUM_EXECUTABLE || undefined,
+  });
+  try {
+    const popupContext = await popupBrowser.newContext({ locale: "en-GB" });
+    await setup(popupContext, false, false, true);
+    const popupPage = await popupContext.newPage();
+    await popupPage.goto(new URL("/?demo=1&region=de-de", base).href);
+    await popupPage.getByText("Monitor healthy", { exact: true }).waitFor();
+    await popupPage
+      .getByRole("button", { name: "Auto-open off", exact: true })
+      .click();
+    await popupPage.getByRole("button", { name: "Simulate a drop" }).click();
+    // Do not poll DOM assertions while activation expires: automation evaluations
+    // can carry a user gesture. Let the page's real six-second timer fire unaided.
+    await new Promise((resolve) => setTimeout(resolve, 8500));
+    assert.deepEqual(
+      await popupPage.evaluate(() => window.__testOpenActivation),
+      [false],
+      "The test fires after click activation expires",
+    );
+    const demoShop = popupContext.pages().find((page) => page !== popupPage);
+    assert.ok(demoShop, "The browser opened the safe demo tab");
+    await demoShop.waitForURL(
+      new URL("/auto-open-preview?region=de-de&model=5090", base).href,
+    );
+    await demoShop
+      .getByRole("heading", { name: "Demo shop", exact: true })
+      .waitFor();
+    await demoShop.getByText("RTX 5090 · Germany", { exact: true }).waitFor();
+    assert.equal(await demoShop.evaluate(() => window.opener), null);
+    assert.equal(await demoShop.evaluate(() => document.referrer), "");
+    assert.equal(popupContext.pages().length, 2);
+    await demoShop.screenshot({
+      path: resolve(screenshots, "auto-open-demo-shop.png"),
+      animations: "disabled",
+    });
+    await demoShop.setViewportSize({ width: 320, height: 640 });
+    assert.ok(
+      await demoShop.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    );
+    await popupContext.close();
+  } finally {
+    await popupBrowser.close();
+  }
+  console.log(
+    "PASS: real delayed same-origin demo tab, no opener/referrer; popup blocking disabled by this automation launch",
+  );
+
+  phase = "real Chromium popup blocking and manual demo fallback";
+  const blockingBrowser = await chromium.launch({
+    headless: true,
+    executablePath: process.env.CHROMIUM_EXECUTABLE || undefined,
+    ignoreDefaultArgs: ["--disable-popup-blocking"],
+  });
+  try {
+    const blockingContext = await blockingBrowser.newContext();
+    await setup(blockingContext, false, false, true);
+    const blockedPage = await blockingContext.newPage();
+    await blockedPage.goto(new URL("/?demo=1&region=de-de", base).href);
+    await blockedPage.getByText("Monitor healthy", { exact: true }).waitFor();
+    await blockedPage
+      .getByRole("button", { name: "Auto-open off", exact: true })
+      .click();
+    await blockedPage.getByRole("button", { name: "Simulate a drop" }).click();
+    await new Promise((resolve) => setTimeout(resolve, 8500));
+    assert.deepEqual(
+      await blockedPage.evaluate(() => window.__testOpenActivation),
+      [false],
+    );
+    await blockedPage.getByTestId("availability-alert").waitFor();
+    assert.equal(
+      blockingContext.pages().length,
+      1,
+      "Default popup policy blocks the delayed tab",
+    );
+    await blockedPage
+      .getByText(
+        "No demo tab? Allow popups for this site and retry, or open it below.",
+        { exact: true },
+      )
+      .waitFor();
+    const manualPage = blockingContext.waitForEvent("page");
+    await blockedPage
+      .getByRole("link", { name: "Open demo shop", exact: true })
+      .click();
+    const fallback = await manualPage;
+    await fallback
+      .getByRole("heading", { name: "Demo shop", exact: true })
+      .waitFor();
+    assert.equal(new URL(fallback.url()).origin, base.origin);
+    assert.equal(await fallback.evaluate(() => window.opener), null);
+    await blockingContext.close();
+  } finally {
+    await blockingBrowser.close();
+  }
+  console.log(
+    "PASS: default Chromium blocks the delayed popup; the visual alert and manual demo-shop link still work",
+  );
 
   phase = "blocked storage and unsupported locale";
   const locked = await browser.newContext({ locale: "en-GB" });

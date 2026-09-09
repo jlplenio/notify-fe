@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { autoOpenStores } from "./actions.ts";
+import { autoOpenStores, previewStoreUrl } from "./actions.ts";
 import { demoPacket } from "./demo.ts";
 import { MonitorState, type Packet } from "./protocol.ts";
 
@@ -14,7 +14,7 @@ function live(): Packet {
   };
 }
 
-void test("auto-open is opt-in, selected, live-only and never runs on snapshots", () => {
+void test("auto-open is opt-in, selected, live-only by default and quiet on snapshots", () => {
   const packet = live();
   const unexpected = () => {
     assert.fail("Must not open a shop");
@@ -38,6 +38,90 @@ void test("auto-open is opt-in, selected, live-only and never runs on snapshots"
     ),
     0,
   );
+});
+
+void test("explicit demo auto-open uses only a fixed same-origin test destination", () => {
+  const packet = { ...live(), synthetic: true };
+  packet.cards.find((c) => c.model === "5090")!.productUrl =
+    "https://store.example/never-open";
+  const calls: string[][] = [];
+  assert.equal(
+    autoOpenStores(
+      packet,
+      ["5090", "5090"],
+      true,
+      (...args) => calls.push(args),
+      true,
+    ),
+    1,
+  );
+  assert.deepEqual(calls, [
+    [
+      "/auto-open-preview?region=de-de&model=5090",
+      "_blank",
+      "noopener,noreferrer",
+    ],
+  ]);
+  assert.equal(
+    previewStoreUrl("en-gb", "5080"),
+    "/auto-open-preview?region=en-gb&model=5080",
+  );
+});
+
+void test("demo auto-open cannot leak into live, disabled, unselected or stale alerts", () => {
+  const unexpected = () => assert.fail("No test tab expected");
+  const packet = { ...live(), synthetic: true };
+  assert.equal(autoOpenStores(live(), ["5090"], true, unexpected, true), 0);
+  assert.equal(autoOpenStores(packet, ["5090"], false, unexpected, true), 0);
+  assert.equal(autoOpenStores(packet, ["5070"], true, unexpected, true), 0);
+  assert.equal(
+    autoOpenStores(
+      { ...packet, type: "snapshot" },
+      ["5090"],
+      true,
+      unexpected,
+      true,
+    ),
+    0,
+  );
+  assert.equal(
+    autoOpenStores(
+      { ...packet, status: "offline" },
+      ["5090"],
+      true,
+      unexpected,
+      true,
+    ),
+    0,
+  );
+  packet.cards.find((c) => c.model === "5090")!.observedAt = NOW - 20_000;
+  assert.equal(autoOpenStores(packet, ["5090"], true, unexpected, true), 0);
+});
+
+void test("synthetic retries and reconnect snapshots cannot duplicate test tabs", () => {
+  const state = new MonitorState("de-de", true);
+  state.accept(demoPacket("de-de", NOW - 1000, 1), 0);
+  const packet = { ...live(), synthetic: true };
+  let opened = 0;
+  const apply = (input: Packet) => {
+    const result = state.accept(input, 1000);
+    if (result)
+      autoOpenStores(
+        result.packet,
+        result.alerts,
+        true,
+        () => {
+          opened++;
+        },
+        true,
+      );
+  };
+  apply(packet);
+  apply({ ...packet, sequence: 3 });
+  state.beginConnection();
+  apply({ ...packet, type: "snapshot", alerts: [] });
+  apply(packet);
+  assert.equal(opened, 1);
 });
 
 void test("auto-open safely deduplicates destinations and tolerates popup blocking", () => {
