@@ -43,3 +43,5 @@ yarn-error.log*
 *.tsbuildinfo
 fetch.py
 development
+.env*
+!.env.example

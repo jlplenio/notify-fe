@@ -32,7 +32,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       });
 
       try {
-        const shopUrl = gpuCard.product_url
+        const shopUrl = gpuCard.product_url?.length
           ? gpuCard.product_url
           : nvidiaBaseUrl;
         const navUrl = `${atob("aHR0cHM6Ly9udmlkaWEuY29tLnBsZW4uaW8v")}?url=${encodeURIComponent(shopUrl)}`;
@@ -129,7 +129,7 @@ export default function ItemRow({ gpuCard, onToggleIncluded }: ItemRowProps) {
       >
         {gpuCard.available && (
           <a
-            href={`${atob("aHR0cHM6Ly9udmlkaWEuY29tLnBsZW4uaW8v")}?url=${encodeURIComponent(gpuCard.product_url ? gpuCard.product_url : nvidiaBaseUrl)}`}
+            href={`${atob("aHR0cHM6Ly9udmlkaWEuY29tLnBsZW4uaW8v")}?url=${encodeURIComponent(gpuCard.product_url?.length ? gpuCard.product_url : nvidiaBaseUrl)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex align-middle"

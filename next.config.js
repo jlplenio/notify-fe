@@ -7,9 +7,12 @@ await import("./src/env.js");
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
+  agentRules: false,
 
   images: {
-    domains: ['storage.ko-fi.com'],
+    remotePatterns: [
+      { protocol: "https", hostname: "storage.ko-fi.com", pathname: "/**" },
+    ],
   },
 
   /**

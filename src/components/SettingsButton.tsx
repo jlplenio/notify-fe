@@ -162,9 +162,7 @@ export function SettingsButton() {
             </label>
             <Switch
               checked={apiAlarmEnabled}
-              onCheckedChange={(checked) =>
-                setApiAlarmEnabled(checked as boolean)
-              }
+              onCheckedChange={(checked) => setApiAlarmEnabled(checked)}
               className="ml-2"
             />
           </div>
