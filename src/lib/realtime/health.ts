@@ -1,4 +1,5 @@
 import type { MonitorView } from "../../hooks/useMonitor.ts";
+import type { Model } from "./catalog.ts";
 import { unhealthyStockModels } from "./protocol.ts";
 
 interface HealthCopy {
@@ -72,22 +73,38 @@ export function stockHealthCopy(view: MonitorView): HealthCopy {
   };
 }
 
-/** Catalog limitations stay visible without claiming the stock polls failed. */
-export function catalogNotice(view: MonitorView): {
+export interface CatalogInfo {
   text: string;
   tone: "muted" | "warning";
-} | null {
+}
+
+function hasCatalogContext(view: MonitorView): boolean {
+  return (
+    view.packet !== null &&
+    view.serverNow !== null &&
+    view.connection === "connected" &&
+    !["offline", "transport_silent", "waiting"].includes(view.health)
+  );
+}
+
+function recentCatalogResult(view: MonitorView) {
+  const p = view.packet;
+  const result = p?.catalogResult;
+  const now = view.serverNow;
+  return p &&
+    result &&
+    now !== null &&
+    now - result.checkedAt >= 0 &&
+    now - result.checkedAt < p.catalogStaleAfterMs
+    ? result
+    : null;
+}
+
+/** Compact, on-demand context; never changes the stock-health banner. */
+export function catalogNotice(view: MonitorView): CatalogInfo | null {
   const p = view.packet,
     now = view.serverNow;
-  if (
-    !p ||
-    now === null ||
-    view.connection !== "connected" ||
-    view.health === "offline" ||
-    view.health === "transport_silent" ||
-    view.health === "waiting"
-  )
-    return null;
+  if (!p || now === null || !hasCatalogContext(view)) return null;
 
   const failures = {
     blocked: "SKU updates blocked",
@@ -101,6 +118,12 @@ export function catalogNotice(view: MonitorView): {
       text: `${failures[p.catalogStatus as keyof typeof failures]} — using last-known mappings.`,
       tone: "warning",
     };
+  const result = recentCatalogResult(view);
+  if (result && p.models.some((model) => !result.models.includes(model)))
+    return {
+      text: "NVIDIA’s latest catalog response omitted some cards. Stock checks use their last-known SKUs. A newer SKU may not be detected until it appears in the catalog.",
+      tone: "muted",
+    };
   if (
     p.catalogStatus === "healthy" &&
     p.catalogCheckedAt !== null &&
@@ -111,7 +134,27 @@ export function catalogNotice(view: MonitorView): {
   // "stale" is also used for partial responses; its timestamp records the
   // last FULL confirmation, not the most recent successful catalog request.
   return {
-    text: "SKU verification incomplete — using last-known mappings.",
+    text: "A fresh, complete SKU confirmation is not available. Stock checks use the known SKUs; details about individual catalog omissions are not available yet.",
+    tone: "muted",
+  };
+}
+
+/** Only mark a card when the feed gives evidence for that particular card. */
+export function cardCatalogNotice(
+  view: MonitorView,
+  model: Model,
+): CatalogInfo | null {
+  if (!hasCatalogContext(view)) return null;
+  const card = view.packet?.cards.find((entry) => entry.model === model);
+  if (!card?.sku)
+    return {
+      text: "No SKU is known for this card yet. Stock checks cannot run until a mapping is found.",
+      tone: "warning",
+    };
+  const result = recentCatalogResult(view);
+  if (!result || result.models.includes(model)) return null;
+  return {
+    text: "NVIDIA’s latest successful catalog response did not list this card. Stock checks use its last-known SKU. A newer SKU may not be detected until it appears in the catalog.",
     tone: "muted",
   };
 }

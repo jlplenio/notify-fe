@@ -5,6 +5,7 @@ import { storeUrl, legacyRedirectTarget } from "./catalog.ts";
 import {
   MonitorState,
   isStockCheckFresh,
+  isStockCheckInGrace,
   packetSchema,
   relativeTime,
   subscriptionUrl,
@@ -13,6 +14,29 @@ import {
 } from "./protocol.ts";
 
 const START = 1_788_900_000_000;
+void test("catalog evidence is optional, bounded, unique and not from the future", () => {
+  const p = demoPacket("de-de", START);
+  assert.equal(packetSchema.safeParse(p).success, true);
+  for (const models of [[], ["5090"], ["5070", "5080", "5090"]]) {
+    const parsed = packetSchema.parse({
+      ...p,
+      catalogResult: { checkedAt: START, models },
+    });
+    assert.deepEqual(parsed.catalogResult?.models, models);
+  }
+  for (const result of [
+    { checkedAt: START + 1, models: ["5090"] },
+    { checkedAt: -1, models: [] },
+    { checkedAt: START, models: ["5090", "5090"] },
+    { checkedAt: START, models: ["4090"] },
+    { models: ["5090"] },
+  ])
+    assert.equal(
+      packetSchema.safeParse({ ...p, catalogResult: result }).success,
+      false,
+    );
+});
+
 void test("legacy redirect accepts only HTTPS NVIDIA destinations", () => {
   assert.equal(
     legacyRedirectTarget("https://store.nvidia.com/item"),
@@ -146,7 +170,10 @@ void test("missing, stale, failed, future or unknown stock stays degraded even w
     if (reason === "missing")
       p.cards = p.cards.filter((c) => c.model !== "5070");
     if (reason === "stale") card.observedAt = p.serverTime - p.staleAfterMs;
-    if (reason === "failed") card.status = "blocked";
+    if (reason === "failed") {
+      card.status = "blocked";
+      card.observedAt = p.serverTime - 30_000;
+    }
     if (reason === "future") card.observedAt = p.serverTime + 1;
     if (reason === "unknown") card.available = null;
     if (reason === "unobserved") card.observedAt = null;
@@ -162,6 +189,84 @@ void test("missing, stale, failed, future or unknown stock stays degraded even w
       ),
     );
   }
+});
+
+void test("transient failures have a 30-second display grace without rewriting raw state", () => {
+  for (const status of [
+    "blocked",
+    "timeout",
+    "network_error",
+    "rate_limited",
+    "stale",
+  ] as const) {
+    const p = packet();
+    p.status = "source_degraded";
+    const card = p.cards[0]!;
+    card.status = status;
+    card.observedAt = p.serverTime - 10_000;
+    const state = new MonitorState("de-de");
+    state.accept(p, 0);
+    assert.equal(state.health(19_999), "healthy", status);
+    assert.equal(state.health(20_000), "source_degraded", status);
+    assert.equal(state.packet?.cards[0]?.status, status);
+    assert.equal(state.packet?.cards[0]?.observedAt, card.observedAt);
+    assert.equal(isStockCheckFresh(card, p.serverTime, p.staleAfterMs), false);
+    assert.equal(isStockCheckInGrace(card, p.serverTime, p.staleAfterMs), true);
+    assert.deepEqual(unhealthyStockModels(p, p.serverTime + 30_000), [
+      card.model,
+    ]);
+  }
+});
+
+void test("heartbeats cannot renew failure grace and recovery clears it", () => {
+  const state = new MonitorState("de-de");
+  const p = packet();
+  p.cards[0]!.status = "blocked";
+  p.cards[0]!.observedAt = p.serverTime - 20_000;
+  state.accept(p, 0);
+  const heartbeat = {
+    ...p,
+    type: "health" as const,
+    sequence: 2,
+    serverTime: p.serverTime + 9000,
+  };
+  state.accept(heartbeat, 9000);
+  assert.equal(state.health(9999), "healthy");
+  assert.equal(state.health(10_000), "source_degraded");
+  state.accept(packet(3, "update"), 10_001);
+  assert.equal(state.health(10_001), "healthy");
+});
+
+void test("grace is bounded by source freshness and cannot hide unknown, invalid or future results", () => {
+  const p = packet();
+  const card = p.cards[0]!;
+  card.status = "timeout";
+  card.observedAt = p.serverTime - 15_000;
+  assert.equal(isStockCheckInGrace(card, p.serverTime, 10_000), false);
+  for (const patch of [
+    { status: "unknown" as const },
+    { status: "invalid_response" as const },
+    { available: null },
+    { observedAt: null },
+    { observedAt: p.serverTime + 1 },
+  ])
+    assert.equal(
+      isStockCheckInGrace({ ...card, ...patch }, p.serverTime, 60_000),
+      false,
+    );
+  assert.equal(isStockCheckInGrace(undefined, p.serverTime, 60_000), false);
+});
+
+void test("display grace never produces an alert from cached positive stock", () => {
+  const state = new MonitorState("de-de");
+  state.accept(packet(), 0);
+  const p = packet(2, "update", true);
+  p.cards.find((c) => c.model === "5090")!.status = "timeout";
+  assert.deepEqual(state.accept(p, 1)?.alerts, []);
+  assert.equal(state.health(1), "healthy");
+  p.sequence++;
+  p.cards.find((c) => c.model === "5090")!.status = "healthy";
+  assert.deepEqual(state.accept(p, 2)?.alerts, ["5090"]);
 });
 
 void test("catalog-only degradation cannot keep stock green after its own freshness deadline", () => {

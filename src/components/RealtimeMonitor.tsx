@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { ModeToggle } from "./ThemeToggle";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { env } from "~/env";
 import { useMonitor, type MonitorView } from "~/hooks/useMonitor";
 import { useAlertSound } from "~/hooks/useAlertSound";
@@ -38,13 +39,55 @@ import {
 } from "~/lib/realtime/preferences";
 import {
   isStockCheckFresh,
+  isStockCheckInGrace,
   relativeTime,
   type CardState,
   type Packet,
 } from "~/lib/realtime/protocol";
 import { autoOpenStores, previewStoreUrl } from "~/lib/realtime/actions";
-import { catalogNotice, stockHealthCopy } from "~/lib/realtime/health";
+import {
+  cardCatalogNotice,
+  catalogNotice,
+  stockHealthCopy,
+  type CatalogInfo,
+} from "~/lib/realtime/health";
 import styles from "~/styles/monitor.module.css";
+
+function CatalogInfoButton({
+  notice,
+  label,
+  testId,
+}: {
+  notice: CatalogInfo;
+  label: string;
+  testId: string;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={styles.catalogInfoButton}
+          aria-label={label}
+          data-testid={testId}
+          data-tone={notice.tone}
+        >
+          <Info size={15} aria-hidden="true" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className={styles.catalogPopover}
+        side="bottom"
+        align="start"
+        collisionPadding={12}
+        aria-label={label}
+      >
+        <p className={styles.catalogPopoverTitle}>{label}</p>
+        <p>{notice.text}</p>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 /** Decorative, code-native hardware sketch; not a product photograph. */
 function GpuArtwork() {
@@ -136,15 +179,21 @@ function StockCard({
   demo: boolean;
 }) {
   const now = monitor.serverNow ?? Date.now();
-  const fresh =
+  const connected =
     monitor.connection === "connected" &&
     monitor.health !== "offline" &&
-    monitor.health !== "transport_silent" &&
+    monitor.health !== "transport_silent";
+  const fresh =
+    connected &&
     isStockCheckFresh(card, now, monitor.packet?.staleAfterMs ?? 60_000);
+  const grace =
+    connected &&
+    isStockCheckInGrace(card, now, monitor.packet?.staleAfterMs ?? 60_000);
   const available = fresh && card?.available === true;
   const known = fresh && card?.available !== null;
   const stamp = card?.lastAvailableAt;
   const date = stamp != null ? new Date(stamp) : null;
+  const catalog = cardCatalogNotice(monitor, model);
   return (
     <article
       className={`${styles.stockCard} ${selected ? styles.selected : ""} ${available ? styles.available : ""}`}
@@ -155,6 +204,13 @@ function StockCard({
         <h3 className={styles.model}>
           <span className={styles.rtx}>RTX</span> {model}
         </h3>
+        {catalog && (
+          <CatalogInfoButton
+            notice={catalog}
+            label={`SKU information for RTX ${model}`}
+            testId={`catalog-info-${model}`}
+          />
+        )}
       </div>
       <div className={styles.cardAvailability}>
         <span
@@ -164,12 +220,24 @@ function StockCard({
           <span className={styles.statusDot} />
           {available
             ? "In stock"
-            : known
-              ? "Out of stock"
-              : card
-                ? "Unconfirmed"
-                : "Awaiting data"}
+            : grace && card?.available
+              ? "Last seen in stock"
+              : grace
+                ? "Out of stock"
+                : known
+                  ? "Out of stock"
+                  : card
+                    ? "Unconfirmed"
+                    : "Awaiting data"}
         </span>
+        {grace && (
+          <span
+            className={styles.exactTime}
+            data-testid={`last-check-${model}`}
+          >
+            Last confirmed {relativeTime(card?.observedAt, now).toLowerCase()}
+          </span>
+        )}
         {available && monitor.packet && (
           <a
             className={styles.shopLink}
@@ -531,14 +599,23 @@ export default function RealtimeMonitor() {
               data-testid="monitor-health"
               data-tone={health.tone}
             >
-              <p className={styles.healthTitle} role="status">
-                <Radio
-                  size={16}
-                  className={styles.healthBeacon}
-                  aria-hidden="true"
-                />{" "}
-                {health.title}
-              </p>
+              <div className={styles.healthHeading}>
+                <p className={styles.healthTitle} role="status">
+                  <Radio
+                    size={16}
+                    className={styles.healthBeacon}
+                    aria-hidden="true"
+                  />{" "}
+                  {health.title}
+                </p>
+                {catalog && (
+                  <CatalogInfoButton
+                    notice={catalog}
+                    label="About SKU verification"
+                    testId="catalog-info"
+                  />
+                )}
+              </div>
               <span
                 className={styles.healthReport}
                 data-testid="last-heartbeat"
@@ -563,18 +640,6 @@ export default function RealtimeMonitor() {
                 <p className={styles.healthDetail}>{health.detail}</p>
               )}
             </div>
-            {catalog && (
-              <p
-                className={styles.catalogNotice}
-                data-testid="catalog-notice"
-                data-tone={catalog.tone}
-                role="status"
-                title="Stock checks use known SKU mappings. The catalog has not fully reverified them, so a newer SKU could be missed."
-              >
-                <Info size={14} aria-hidden="true" />
-                <span>{catalog.text}</span>
-              </p>
-            )}
             <div className={styles.columnLabels} aria-hidden="true">
               <span>Graphics card</span>
               <span>Availability</span>

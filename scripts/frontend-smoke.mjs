@@ -40,6 +40,11 @@ async function waitFor(check, message) {
   throw new Error(message);
 }
 
+async function closeCatalogInfo(page) {
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog").waitFor({ state: "detached" });
+}
+
 async function setup(
   context,
   blockedStorage = false,
@@ -295,21 +300,54 @@ try {
   );
 
   phase = "stock health independent of catalog completeness and other locales";
-  assert.equal(await page.getByTestId("catalog-notice").count(), 0);
-  const incomplete = () => ({
-    ...demoPacket("de-de", Date.now(), ++sequence),
-    type: "health",
-    status: "source_degraded",
-    catalogStatus: "stale",
-    catalogCheckedAt: null,
-  });
-  deliver(incomplete());
+  assert.equal(await page.getByTestId("catalog-info").count(), 0);
+  const incomplete = () => {
+    const packet = demoPacket("de-de", Date.now(), ++sequence);
+    return {
+      ...packet,
+      type: "health",
+      status: "source_degraded",
+      catalogStatus: "stale",
+      catalogCheckedAt: null,
+      catalogResult: { checkedAt: packet.serverTime, models: ["5090"] },
+    };
+  };
+  const legacyPartial = incomplete();
+  delete legacyPartial.catalogResult;
+  deliver(legacyPartial);
+  await page.getByTestId("catalog-info").waitFor();
+  for (const model of ["5070", "5080", "5090"])
+    assert.equal(await page.getByTestId(`catalog-info-${model}`).count(), 0);
+  await page.getByTestId("catalog-info").focus();
+  await page.keyboard.press("Enter");
   await page
-    .getByTestId("catalog-notice")
-    .getByText("SKU verification incomplete — using last-known mappings.", {
-      exact: true,
-    })
+    .getByRole("dialog", { name: "About SKU verification" })
+    .getByText(/details about individual catalog omissions are not available/)
     .waitFor();
+  await closeCatalogInfo(page);
+  await waitFor(
+    () =>
+      page
+        .getByTestId("catalog-info")
+        .evaluate((el) => el === document.activeElement),
+    "Closing catalog info restores focus to its trigger",
+  );
+  deliver(incomplete());
+  await page.getByTestId("catalog-info-5080").waitFor();
+  assert.equal(await page.getByTestId("catalog-info-5070").count(), 1);
+  assert.equal(await page.getByTestId("catalog-info-5090").count(), 0);
+  assert.equal(
+    await page.getByTestId("catalog-notice").count(),
+    0,
+    "No persistent catalog banner",
+  );
+  assert.equal(await page.getByRole("dialog").count(), 0);
+  await page.getByTestId("catalog-info").click();
+  await page
+    .getByRole("dialog", { name: "About SKU verification" })
+    .getByText(/catalog response omitted some cards/)
+    .waitFor();
+  await closeCatalogInfo(page);
   await page
     .getByTestId("monitor-health")
     .getByText("Stock checks active", { exact: true })
@@ -319,7 +357,7 @@ try {
     "healthy",
   );
   assert.equal(
-    await page.getByTestId("catalog-notice").getAttribute("data-tone"),
+    await page.getByTestId("catalog-info").getAttribute("data-tone"),
     "muted",
   );
   assert.equal(
@@ -336,6 +374,16 @@ try {
     fullPage: true,
     animations: "disabled",
   });
+  await page.getByTestId("catalog-info-5080").click();
+  await page
+    .getByRole("dialog", { name: "SKU information for RTX 5080" })
+    .getByText(/did not list this card/)
+    .waitFor();
+  await page.screenshot({
+    path: resolve(screenshots, "catalog-card-popover-desktop.png"),
+    animations: "disabled",
+  });
+  await closeCatalogInfo(page);
   await page.getByRole("button", { name: "Toggle theme" }).click();
   await page.getByRole("menuitem", { name: "Dark", exact: true }).click();
   await page.waitForFunction(() =>
@@ -353,27 +401,46 @@ try {
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
-      `Catalog note fits ${width}px`,
+      `Catalog controls fit ${width}px`,
     );
+    const info = await page.getByTestId("catalog-info-5080").boundingBox();
+    const stock = await page.getByTestId("stock-5080").boundingBox();
+    assert.ok(
+      info.x + info.width <= stock.x,
+      `Card info does not overlap stock at ${width}px`,
+    );
+    await page.getByTestId("catalog-info-5080").click();
+    const popup = page.getByRole("dialog", {
+      name: "SKU information for RTX 5080",
+    });
+    await popup.waitFor();
+    const box = await popup.boundingBox();
+    assert.ok(
+      box.x >= 0 && box.x + box.width <= width,
+      `Info popup fits ${width}px`,
+    );
+    await closeCatalogInfo(page);
   }
   await page.getByRole("button", { name: "Toggle theme" }).click();
   await page.getByRole("menuitem", { name: "Light", exact: true }).click();
 
   deliver({ ...incomplete(), catalogStatus: "timeout" });
+  await page.getByTestId("catalog-info").click();
   await page
-    .getByTestId("catalog-notice")
+    .getByRole("dialog", { name: "About SKU verification" })
     .getByText("SKU refresh timed out — using last-known mappings.", {
       exact: true,
     })
     .waitFor();
   assert.equal(
-    await page.getByTestId("catalog-notice").getAttribute("data-tone"),
+    await page.getByTestId("catalog-info").getAttribute("data-tone"),
     "warning",
   );
   assert.equal(
     await page.getByTestId("monitor-health").getAttribute("data-tone"),
     "healthy",
   );
+  await closeCatalogInfo(page);
 
   const austria = demoPacket("de-at", Date.now(), ++sequence);
   austria.status = "source_degraded";
@@ -400,7 +467,8 @@ try {
     await page.getByTestId("monitor-health").getAttribute("data-tone"),
     "warning",
   );
-  assert.equal(await page.getByTestId("catalog-notice").count(), 0);
+  assert.equal(await page.getByTestId("catalog-info").count(), 0);
+  assert.equal(await page.getByTestId("catalog-info-5080").count(), 0);
   await page.screenshot({
     path: resolve(screenshots, "stock-card-warning.png"),
     fullPage: true,
@@ -430,11 +498,80 @@ try {
     .getByTestId("monitor-health")
     .getByText("Stock checks active", { exact: true })
     .waitFor();
-  await page.getByTestId("catalog-notice").waitFor({ state: "detached" });
+  await page.getByTestId("catalog-info").waitFor({ state: "detached" });
+  assert.equal(await page.getByTestId("catalog-info-5080").count(), 0);
   assert.equal(await page.getByTestId("availability-alert").count(), 0);
   assert.equal(await page.evaluate(() => window.__testAudioPlays), 0);
   console.log(
     "PASS: catalog-only degradation stays separate, real stock gaps name affected cards, locale isolation and recovery stay correct",
+  );
+
+  phase = "transient stock failure grace and strict positive alerts";
+  const transient = incomplete();
+  const transientCard = transient.cards.find((c) => c.model === "5090");
+  transientCard.status = "blocked";
+  transientCard.observedAt = transient.serverTime - 10_000;
+  deliver(transient);
+  await page
+    .getByTestId("last-check-5090")
+    .getByText(/Last confirmed 1\ds ago/)
+    .waitFor();
+  assert.equal(
+    await page.getByTestId("stock-5090").innerText(),
+    "Out of stock",
+  );
+  assert.equal(
+    await page.getByTestId("monitor-health").getAttribute("data-tone"),
+    "healthy",
+  );
+  await page
+    .getByRole("button", { name: "Auto-open off", exact: true })
+    .click();
+  const cachedPositive = {
+    ...transient,
+    sequence: ++sequence,
+    type: "update",
+    synthetic: false,
+    alerts: ["5090"],
+    cards: transient.cards.map((c) =>
+      c.model === "5090" ? { ...c, available: true } : c,
+    ),
+  };
+  deliver(cachedPositive);
+  await page
+    .getByTestId("stock-5090")
+    .getByText("Last seen in stock", { exact: true })
+    .waitFor();
+  assert.equal(
+    await page.getByRole("link", { name: "Shop RTX 5090" }).count(),
+    0,
+  );
+  assert.equal(await page.getByTestId("availability-alert").count(), 0);
+  assert.equal(await page.evaluate(() => window.__testOpened.length), 0);
+  assert.equal(await page.evaluate(() => window.__testAudioPlays), 0);
+  await page.screenshot({
+    path: resolve(screenshots, "stock-retry-grace.png"),
+    animations: "disabled",
+  });
+  const expired = incomplete();
+  expired.cards.find((c) => c.model === "5090").status = "blocked";
+  expired.cards.find((c) => c.model === "5090").observedAt =
+    expired.serverTime - 30_000;
+  deliver(expired);
+  await page
+    .getByTestId("monitor-health")
+    .getByText("RTX 5090 checks unavailable", { exact: true })
+    .waitFor();
+  assert.equal(await page.getByTestId("stock-5090").innerText(), "Unconfirmed");
+  assert.equal(await page.getByTestId("last-check-5090").count(), 0);
+  publish("de-de", null, "health");
+  await page
+    .getByTestId("monitor-health")
+    .getByText("Stock checks active", { exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "Auto-open on", exact: true }).click();
+  console.log(
+    "PASS: transient failures retain labelled last-confirmed stock; 30-second gaps warn; cached positives never sound or open a shop",
   );
 
   phase = "persistent choices without a socket reconnect";

@@ -48,6 +48,17 @@ export const packetSchema = z
     offlineAfterMs: counter.positive(),
     catalogStatus: source,
     catalogCheckedAt: timestamp,
+    // Older publishers omit this; never guess which cards were omitted.
+    catalogResult: z
+      .object({
+        checkedAt: counter,
+        models: z
+          .array(z.enum(MODELS))
+          .max(MODELS.length)
+          .refine((models) => new Set(models).size === models.length),
+      })
+      .nullable()
+      .optional(),
     metrics: metrics
       .extend({
         http200: counter,
@@ -67,6 +78,11 @@ export const packetSchema = z
     alerts: z.array(z.enum(MODELS)).max(3),
   })
   .superRefine((packet, ctx) => {
+    if (
+      packet.catalogResult &&
+      packet.catalogResult.checkedAt > packet.serverTime
+    )
+      ctx.addIssue({ code: "custom", message: "Future catalog observation" });
     if (
       new Set(packet.models).size !== packet.models.length ||
       new Set(packet.cards.map((c) => c.model)).size !== packet.cards.length ||
@@ -93,15 +109,34 @@ export function isStockCheckFresh(
   );
 }
 
-export function unhealthyStockModels(packet: Packet, now: number): Model[] {
-  return MODELS.filter(
-    (model) =>
-      !isStockCheckFresh(
-        packet.cards.find((card) => card.model === model),
-        now,
-        packet.staleAfterMs,
-      ),
+export const STOCK_FAILURE_GRACE_MS = 30_000;
+
+/** Display grace only: never makes a cached result eligible for an alert. */
+export function isStockCheckInGrace(
+  card: CardState | undefined,
+  now: number,
+  staleAfterMs: number,
+): boolean {
+  return (
+    card !== undefined &&
+    ["blocked", "rate_limited", "timeout", "network_error", "stale"].includes(
+      card.status,
+    ) &&
+    typeof card.available === "boolean" &&
+    card.observedAt !== null &&
+    now - card.observedAt >= 0 &&
+    now - card.observedAt < Math.min(STOCK_FAILURE_GRACE_MS, staleAfterMs)
   );
+}
+
+export function unhealthyStockModels(packet: Packet, now: number): Model[] {
+  return MODELS.filter((model) => {
+    const card = packet.cards.find((card) => card.model === model);
+    return (
+      !isStockCheckFresh(card, now, packet.staleAfterMs) &&
+      !isStockCheckInGrace(card, now, packet.staleAfterMs)
+    );
+  });
 }
 
 export function subscriptionUrl(endpoint: string, locale: Locale): string {
