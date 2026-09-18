@@ -16,6 +16,20 @@ Your preferences are saved on your device. The watchlist shows reported stock,
 last sightings and whether stock checks are working. “Last seen in stock” is
 historical; check the store for current availability. Alerts do not make purchases.
 
+### Telegram
+
+Open **Telegram** next to **Auto-open**, enter your own bot token and chat ID (or
+`@channel`), enable alerts, and save. Start the bot in your private chat or give it
+permission to post in your group/channel, then click **Test message**.
+[Create a bot with BotFather](https://core.telegram.org/bots/tutorial#obtain-your-bot-token).
+
+Credentials stay in this tab unless you select **Remember on this device**;
+**Forget** removes saved settings. Browser storage is readable by this website's
+scripts: use a dedicated alert bot and never share its token or put it in a link.
+Messages go directly from your browser to Telegram. **Keep the tab open and your
+device awake**; Telegram alerts work even with sound muted, but not while the site
+is closed or suspended.
+
 ## Use the WebSocket feed
 
 Use a WebSocket client that can set the handshake `Origin` header. No API key or
@@ -80,8 +94,9 @@ text `pong`. See the [message schema](src/lib/realtime/protocol.ts) for all fiel
 
 ## Support
 
-Got your card? [Say thanks on Ko-fi](https://ko-fi.com/timesaved) and mention your
-card and country. Donations help keep the service running.
+Got your card, or rooting for everyone still waiting? [Say thanks](https://ko-fi.com/timesaved).
+Every little tip helps cover $50+ a month and keeps the alerts coming for everyone.
+If you found your card, tell us the model and country. We’d love to hear your good news.
 
 Thanks to [Cloudflare](https://github.com/cloudflare) for supporting the project.
 Notify-FE is a community project, not affiliated with NVIDIA.

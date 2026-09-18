@@ -1,0 +1,144 @@
+.trigger[data-enabled="true"]:not([data-error="true"]) {
+  color: var(--green);
+  background: var(--green-surface);
+}
+.trigger[data-error="true"] {
+  color: #946127;
+  border-color: currentColor;
+}
+:global(.dark) .trigger[data-error="true"] {
+  color: #dfba80;
+}
+.panel {
+  width: min(370px, calc(100vw - 20px));
+  max-height: var(--radix-popover-content-available-height, 85vh);
+  overflow-y: auto;
+  background: #fffefb;
+  color: #243026;
+  border: 1px solid #dce1d5;
+  border-radius: 12px;
+  padding: 16px;
+  font:
+    13px/1.5 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+:global(.dark) .panel {
+  background: #1b2219;
+  color: #eff2e7;
+  border-color: #333e2d;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.heading h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.heading button {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 36px;
+}
+.help {
+  color: #657060;
+  font-size: 12px;
+  margin: 5px 0 10px;
+}
+:global(.dark) .help {
+  color: #adb7a5;
+}
+.help a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.field {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0;
+  font-weight: 500;
+}
+.field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid #aebca5;
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 400;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.check input {
+  width: 16px;
+  height: 16px;
+  accent-color: #52763f;
+}
+.topic summary {
+  cursor: pointer;
+  min-height: 32px;
+  padding: 5px 0;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.actions button,
+.importButton {
+  min-height: 40px;
+  padding: 7px 12px;
+  border: 1px solid #aebca5;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.actions .save {
+  background: #365d2c;
+  color: #fffefb;
+  border-color: #365d2c;
+}
+:global(.dark) .actions .save {
+  background: #c6e69f;
+  color: #24331b;
+}
+.panel button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.panel :is(button, input, a, summary):focus-visible {
+  outline: 2px solid #7fa66a;
+  outline-offset: 3px;
+}
+.status,
+.error {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.error {
+  color: #9b432b;
+}
+:global(.dark) .error {
+  color: #e5b18f;
+}
+@media (max-width: 600px) {
+  .field input {
+    font-size: 16px;
+  }
+  .actions button {
+    min-height: 44px;
+  }
+}

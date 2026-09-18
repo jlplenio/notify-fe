@@ -857,6 +857,19 @@
     font-size: 28px;
   }
 }
+@media (max-width: 760px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .localeField,
+  .toolbarActions {
+    width: 100%;
+  }
+  .controlButton {
+    flex: 1;
+  }
+}
 @media (max-width: 600px) {
   .shell {
     padding: 0 14px;
@@ -894,18 +907,15 @@
     margin-bottom: 10px;
   }
   .toolbar {
-    flex-wrap: wrap;
-    gap: 8px;
     padding: 12px;
   }
-  .localeField {
-    width: 100%;
-  }
   .toolbarActions {
-    width: 100%;
+    gap: 6px;
   }
   .controlButton {
-    flex: 1;
+    gap: 4px;
+    padding: 8px 6px;
+    font-size: 13px;
   }
   .healthPanel {
     padding: 10px 12px;
@@ -1042,6 +1052,15 @@
     gap: 10px;
   }
   .toastIcon {
+    display: none;
+  }
+}
+@media (max-width: 400px) {
+  .controlButton {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  .controlButton > svg {
     display: none;
   }
 }

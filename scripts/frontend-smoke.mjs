@@ -41,6 +41,16 @@ async function waitFor(check, message) {
 }
 
 async function closeCatalogInfo(page) {
+  // Radix registers the layer before its top-layer callback settles. Let the
+  // opening render paint before sending a second automated keyboard action.
+  await page
+    .getByRole("dialog")
+    .evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
   await page.keyboard.press("Escape");
   await page.getByRole("dialog").waitFor({ state: "detached" });
 }
@@ -224,10 +234,12 @@ try {
   );
   const support = page.getByTestId("support-banner");
   await support
-    .getByRole("heading", { name: "Got your card?", exact: true })
+    .getByRole("heading", {
+      name: "Got your card, or rooting for everyone still waiting?",
+      exact: true,
+    })
     .waitFor();
-  assert.match(await support.innerText(), /card \+ country/);
-  assert.match(await support.innerText(), /servers running/);
+  assert.match(await support.innerText(), /\$50\+ a month/);
   const supportLink = support.getByRole("link", {
     name: "Say thanks on Ko-fi",
   });

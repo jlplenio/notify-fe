@@ -2,6 +2,7 @@ import { ThemeProvider } from "next-themes";
 import { Analytics } from "@vercel/analytics/react";
 import { type AppType } from "next/app";
 import Head from "next/head";
+import { stripTelegramCredentials } from "~/lib/realtime/credential-url";
 import "~/styles/globals.css";
 
 const description =
@@ -41,7 +42,12 @@ const MyApp: AppType = ({ Component, pageProps }) => (
       <link rel="canonical" href="https://notify-fe.plen.io/" />
     </Head>
     <Component {...pageProps} />
-    <Analytics />
+    <Analytics
+      beforeSend={(event) => ({
+        ...event,
+        url: stripTelegramCredentials(event.url),
+      })}
+    />
   </ThemeProvider>
 );
 

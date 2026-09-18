@@ -19,10 +19,12 @@ import {
 } from "lucide-react";
 import { ModeToggle } from "./ThemeToggle";
 import { ListenerSummary } from "./ListenerSummary";
+import { TelegramSettings } from "./TelegramSettings";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { env } from "~/env";
 import { useMonitor, type MonitorView } from "~/hooks/useMonitor";
 import { useAlertSound } from "~/hooks/useAlertSound";
+import { useTelegram } from "~/hooks/useTelegram";
 import {
   COUNTRIES,
   DISPLAY_MODELS,
@@ -315,6 +317,7 @@ export default function RealtimeMonitor() {
   const demo =
     env.NEXT_PUBLIC_ENABLE_DEMO === "true" && router.query.demo === "1";
   const sound = useAlertSound(preferences.volume);
+  const telegram = useTelegram();
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -384,6 +387,7 @@ export default function RealtimeMonitor() {
           ),
     });
     if (preferences.soundEnabled) void sound.play();
+    telegram.notify(packet, selected, demo);
   };
   const monitor = useMonitor({
     locale: preferences.locale,
@@ -571,6 +575,10 @@ export default function RealtimeMonitor() {
                   <ExternalLink size={17} />
                   {preferences.autoOpen ? "Auto-open on" : "Auto-open off"}
                 </button>
+                <TelegramSettings
+                  telegram={telegram}
+                  className={styles.controlButton}
+                />
               </div>
             </div>
             <div
@@ -718,11 +726,11 @@ export default function RealtimeMonitor() {
             />
             <div className={styles.supportCopy}>
               <h2 id="support-title">
-                Got your card? <span aria-hidden="true">🎉</span>
+                Got your card, or rooting for everyone still waiting?
               </h2>
               <p>
-                Add your card + country to your Ko-fi message. Every tip helps
-                keep the servers running.
+                Every little tip helps cover $50+ a month and keeps the alerts
+                coming for everyone.
               </p>
             </div>
             <a
