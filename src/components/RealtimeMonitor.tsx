@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { ModeToggle } from "./ThemeToggle";
+import { ListenerSummary } from "./ListenerSummary";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { env } from "~/env";
 import { useMonitor, type MonitorView } from "~/hooks/useMonitor";
@@ -471,29 +472,7 @@ export default function RealtimeMonitor() {
               </h1>
               <p>RTX 50 series stock alerts</p>
             </div>
-            <div
-              className={styles.audience}
-              data-testid="connection-counts"
-              aria-label="Live listener counts"
-              title="Active alert subscriptions at the last report. One person opening multiple tabs counts more than once."
-            >
-              <div>
-                <span className={styles.audienceNumber}>
-                  {packet ? packet.clients.total.toLocaleString() : "—"}
-                </span>
-                <span className={styles.audienceLabel}>Live listeners</span>
-              </div>
-              <div>
-                <span
-                  className={`${styles.audienceNumber} ${styles.localNumber}`}
-                >
-                  {packet ? packet.clients.locale.toLocaleString() : "—"}
-                </span>
-                <span className={styles.audienceLabel}>
-                  Listening in {country.name}
-                </span>
-              </div>
-            </div>
+            <ListenerSummary packet={packet} locale={preferences.locale} />
           </div>
           {simulated && (
             <div
@@ -767,7 +746,7 @@ export default function RealtimeMonitor() {
               </p>
               <p>
                 Heartbeats arrive about every 30 seconds. Stock changes are
-                pushed as soon as detected. “Live listeners” counts connections,
+                pushed as soon as detected. Listener totals count connections,
                 not unique people.
               </p>
               <p>

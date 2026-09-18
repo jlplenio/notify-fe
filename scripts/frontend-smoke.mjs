@@ -115,6 +115,7 @@ async function setup(
         new URL(socket.url()).searchParams.get("models"),
         "5070,5080,5090",
       );
+      assert.equal(new URL(socket.url()).searchParams.get("client"), "website");
       sockets.set(socket, locale);
       totalConnections++;
       socket.onClose(() => sockets.delete(socket));
@@ -280,8 +281,15 @@ try {
     await page.getByText("Connected tabs", { exact: true }).count(),
     0,
   );
-  await page.getByText("Live listeners", { exact: true }).waitFor();
-  await page.getByText("Listening in Germany", { exact: true }).waitFor();
+  await page.getByText("Total listeners", { exact: true }).waitFor();
+  assert.equal(
+    await page.getByTestId("listeners-de-de").getAttribute("data-selected"),
+    "true",
+  );
+  assert.equal(
+    await page.getByTestId("connection-counts").locator("li").count(),
+    13,
+  );
   assert.ok(rows[0].y < rows[1].y && rows[1].y < rows[2].y);
   assert.ok(
     (await page.getByTestId("connection-counts").boundingBox()).y < rows[0].y,

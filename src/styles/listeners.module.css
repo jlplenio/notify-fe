@@ -1,0 +1,229 @@
+.summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  flex: 0 1 500px;
+  min-width: 400px;
+  font-variant-numeric: tabular-nums;
+}
+.overview {
+  min-width: 0;
+}
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.total {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+}
+.total strong {
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.total > span {
+  color: var(--secondary-ink);
+  font-size: 12px;
+}
+.meta,
+.clientCounts,
+.clientCount {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.meta,
+.clientCounts {
+  gap: 8px;
+  color: var(--secondary-ink);
+}
+.meta {
+  margin-top: 6px;
+}
+.clientCount {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.clientCount strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.info {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: var(--secondary-ink);
+}
+.info:hover,
+.info[data-state="open"] {
+  color: var(--green);
+  background: var(--green-surface);
+}
+.info:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.countryToggle {
+  display: none;
+}
+.countries {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  list-style: none;
+}
+.country {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 25px;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--secondary-ink);
+  background: var(--subtle);
+  font-size: 10px;
+  line-height: 1.2;
+}
+.country[data-selected="true"] {
+  color: var(--green);
+  background: var(--green-surface);
+  border-color: color-mix(in srgb, var(--green) 35%, var(--line));
+  font-weight: 700;
+}
+.flag {
+  flex-shrink: 0;
+  width: 16px;
+  height: 11px;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 8%);
+  filter: saturate(0.75);
+}
+.country[data-selected="true"] .flag {
+  filter: none;
+}
+.popover {
+  width: 300px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  border-color: #dce1d5;
+  background: #fffefb;
+  color: #657060;
+}
+.popover strong {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #243026;
+}
+.popover p + p {
+  margin-top: 8px;
+}
+:global(.dark) .popover {
+  border-color: #333e2d;
+  background: #1b2219;
+  color: #adb7a5;
+}
+:global(.dark) .popover strong {
+  color: #eff2e7;
+}
+@media (max-width: 760px) {
+  .summary {
+    display: block;
+    flex-basis: auto;
+    min-width: 0;
+    width: 100%;
+  }
+  .total strong {
+    font-size: 22px;
+  }
+  .meta {
+    display: none;
+    justify-content: flex-start;
+    margin-top: 4px;
+  }
+  .meta[data-expanded="true"] {
+    display: flex;
+  }
+  .info {
+    margin-left: auto;
+  }
+  .clientCounts {
+    gap: 12px;
+  }
+  .countryToggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 9px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--green-surface);
+    color: var(--green);
+    font-size: 12px;
+  }
+  .countryToggle strong {
+    font-weight: 600;
+  }
+  .countryToggle[aria-expanded="true"] > svg:last-child {
+    transform: rotate(180deg);
+  }
+  .countryToggle:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+  }
+  .countries {
+    display: none;
+  }
+  .countries[data-expanded="true"] {
+    display: grid;
+    margin-top: 8px;
+  }
+}
+@media (max-width: 600px) {
+  .heading {
+    gap: 8px;
+  }
+  .total strong {
+    font-size: 20px;
+  }
+  .total > span {
+    font-size: 11px;
+  }
+  .countryToggle {
+    min-height: 32px;
+    padding: 0 8px;
+  }
+}
+@media (max-width: 360px) {
+  .countries {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .meta {
+    gap: 5px;
+  }
+  .total {
+    gap: 5px;
+  }
+  .total > span {
+    font-size: 11px;
+  }
+  .clientCount {
+    font-size: 10px;
+  }
+}

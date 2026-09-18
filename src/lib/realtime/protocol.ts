@@ -2,6 +2,7 @@ import { z } from "zod";
 import { LOCALES, MODELS, type Locale, type Model } from "./catalog.ts";
 
 const counter = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
+const clientCounts = z.object({ website: counter, unclassified: counter });
 const timestamp = counter.max(8_640_000_000_000_000).nullable();
 const source = z.enum([
   "unknown",
@@ -73,6 +74,10 @@ export const packetSchema = z
       total: counter,
       locale: counter,
       byModel: z.object({ "5070": counter, "5080": counter, "5090": counter }),
+      byLocale: z.record(z.enum(LOCALES), counter).optional(),
+      // Optional for older gateways; these count self-reported client labels.
+      byClient: clientCounts.optional(),
+      localeByClient: clientCounts.optional(),
     }),
     cards: z.array(cardSchema).max(3),
     alerts: z.array(z.enum(MODELS)).max(3),
@@ -160,6 +165,7 @@ export function subscriptionUrl(endpoint: string, locale: Locale): string {
   url.searchParams.set("locale", locale);
   // Keep the whole locale visible; alert preferences are applied locally.
   url.searchParams.set("models", MODELS.join(","));
+  url.searchParams.set("client", "website");
   return url.toString();
 }
 

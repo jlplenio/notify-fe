@@ -40,6 +40,21 @@ void test("auto-open is opt-in, selected, live-only by default and quiet on snap
   );
 });
 
+void test("auto-open retains a Proshop basket token through the established redirect", () => {
+  const packet = live();
+  const basket =
+    "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=offline%2Ftest%2Btoken%3D%3D";
+  packet.cards.find((card) => card.model === "5090")!.productUrl = basket;
+  const opened: string[] = [];
+  assert.equal(
+    autoOpenStores(packet, ["5090"], true, (url) => opened.push(url)),
+    1,
+  );
+  const destination = new URL(opened[0]!);
+  assert.equal(destination.origin, "https://nvidia.com.plen.io");
+  assert.equal(destination.searchParams.get("url"), basket);
+});
+
 void test("explicit demo auto-open uses only a fixed same-origin test destination", () => {
   const packet = { ...live(), synthetic: true };
   packet.cards.find((c) => c.model === "5090")!.productUrl =
@@ -134,7 +149,12 @@ void test("auto-open safely deduplicates destinations and tolerates popup blocki
     }),
     1,
   );
-  assert.match(calls[0]![0]!, /^https:\/\/marketplace\.nvidia\.com\/de-de\//);
+  const destination = new URL(calls[0]![0]!);
+  assert.equal(destination.origin, "https://nvidia.com.plen.io");
+  assert.match(
+    destination.searchParams.get("url")!,
+    /^https:\/\/marketplace\.nvidia\.com\/de-de\//,
+  );
   assert.deepEqual(calls[0]!.slice(1), ["_blank", "noopener,noreferrer"]);
   assert.equal(
     autoOpenStores(packet, ["5090"], true, () => {
@@ -171,7 +191,12 @@ void test("only validated HTTPS links are opened, with no executable destination
   autoOpenStores(packet, ["5090"], true, (url) => {
     destination = url;
   });
-  assert.ok(destination.startsWith("https://marketplace.nvidia.com/"));
+  const redirect = new URL(destination);
+  assert.equal(redirect.origin, "https://nvidia.com.plen.io");
+  assert.match(
+    redirect.searchParams.get("url")!,
+    /^https:\/\/marketplace\.nvidia\.com\//,
+  );
 });
 
 void test("protocol deduplication prevents tabs on retries or reconnect snapshots", () => {

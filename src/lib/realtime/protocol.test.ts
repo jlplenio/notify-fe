@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { demoPacket } from "./demo.ts";
-import { storeUrl, legacyRedirectTarget } from "./catalog.ts";
+import { LOCALES, storeUrl, legacyRedirectTarget } from "./catalog.ts";
 import {
   MonitorState,
   isStockCheckFresh,
@@ -357,6 +357,42 @@ void test("last-available timestamps are optional for old servers and never gene
   );
 });
 
+void test("client counts remain optional for older gateways and preserve both scopes", () => {
+  const old = packet();
+  delete old.clients.byClient;
+  delete old.clients.localeByClient;
+  delete old.clients.byLocale;
+  assert.equal(packetSchema.parse(old).clients.byClient, undefined);
+  assert.equal(packetSchema.parse(old).clients.byLocale, undefined);
+  const clients = {
+    ...old.clients,
+    byClient: { website: 100, unclassified: 28 },
+    localeByClient: { website: 20, unclassified: 4 },
+    byLocale: { "de-de": 24, "en-gb": 0 },
+  };
+  assert.deepEqual(packetSchema.parse({ ...old, clients }).clients, clients);
+  for (const byLocale of [
+    { "de-de": -1 },
+    { "de-de": "24" },
+    { "unknown-region": 24 },
+  ])
+    assert.equal(
+      packetSchema.safeParse({ ...old, clients: { ...clients, byLocale } })
+        .success,
+      false,
+    );
+  for (const byClient of [
+    { website: -1, unclassified: 28 },
+    { website: 100 },
+    { website: "100", unclassified: 28 },
+  ])
+    assert.equal(
+      packetSchema.safeParse({ ...old, clients: { ...clients, byClient } })
+        .success,
+      false,
+    );
+});
+
 void test("notification memory stays bounded", () => {
   const state = new MonitorState("de-de");
   state.accept(packet(), 0);
@@ -367,6 +403,7 @@ void test("notification memory stays bounded", () => {
 void test("WebSocket URL cannot contain credentials, arbitrary paths or insecure remote transport", () => {
   const url = new URL(subscriptionUrl("wss://monitor.example/v1/ws", "de-de"));
   assert.equal(url.searchParams.get("models"), "5070,5080,5090");
+  assert.equal(url.searchParams.get("client"), "website");
   for (const bad of [
     "ws://monitor.example/v1/ws",
     "https://monitor.example/v1/ws",
@@ -392,9 +429,33 @@ void test("store links reject executable/credential-bearing URLs and unknown tim
   ])
     assert.equal(storeUrl("de-de", url), fallback);
   assert.equal(
-    storeUrl("de-de", "https://store.nvidia.com/item"),
+    new URL(
+      storeUrl("de-de", "https://store.nvidia.com/item"),
+    ).searchParams.get("url"),
     "https://store.nvidia.com/item",
   );
   assert.equal(relativeTime(null, START), "Not recorded yet");
   assert.equal(relativeTime(START - 2 * 86400_000, START), "2 days ago");
+});
+
+void test("every region preserves arbitrary retailer links and encoded parameters through the established redirect", () => {
+  for (const locale of LOCALES) {
+    for (const retailer of [
+      "https://www.proshop.de/Basket/BuyNvidiaGraphicCard?t=offline%2Ftest%2Btoken%3D%3D",
+      `https://shop.example/${locale}/products/rtx-5090?affiliate=nvidia&token=a+b%2Fc%3D&item=1&item=2#buy`,
+      `https://checkout.example/order/${locale}/a%2Fb%2Bc?signature=offline%252Ftest`,
+    ]) {
+      const destination = new URL(storeUrl(locale, retailer));
+      assert.equal(destination.origin, "https://nvidia.com.plen.io");
+      assert.equal(destination.searchParams.get("url"), retailer);
+    }
+    for (const missing of [null, undefined, "", "javascript:alert(1)"]) {
+      const destination = new URL(storeUrl(locale, missing));
+      assert.equal(destination.origin, "https://nvidia.com.plen.io");
+      assert.equal(
+        destination.searchParams.get("url"),
+        `https://marketplace.nvidia.com/${locale}/consumer/graphics-cards/?locale=${locale}&manufacturer=NVIDIA`,
+      );
+    }
+  }
 });

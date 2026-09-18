@@ -13,6 +13,22 @@ export function demoPacket(
     "5080": 172_800_000,
     "5070": 25_200_000,
   };
+  const byLocale: Record<Locale, number> = {
+    "de-de": 24,
+    "en-gb": 19,
+    "de-at": 6,
+    "da-dk": 5,
+    "es-es": 10,
+    "fr-fr": 16,
+    "it-it": 12,
+    "nl-nl": 9,
+    "nb-no": 4,
+    "pl-pl": 7,
+    "fi-fi": 3,
+    "sv-se": 5,
+    "en-us": 8,
+  };
+  const website = Math.round((byLocale[locale] * 100) / 128);
   return {
     version: 1,
     type: "snapshot",
@@ -52,8 +68,15 @@ export function demoPacket(
     },
     clients: {
       total: 128,
-      locale: 24,
-      byModel: { "5070": 24, "5080": 24, "5090": 24 },
+      locale: byLocale[locale],
+      byModel: {
+        "5070": byLocale[locale],
+        "5080": byLocale[locale],
+        "5090": byLocale[locale],
+      },
+      byLocale,
+      byClient: { website: 100, unclassified: 28 },
+      localeByClient: { website, unclassified: byLocale[locale] - website },
     },
     cards: MODELS.map((model) => ({
       model,

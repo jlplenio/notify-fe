@@ -54,6 +54,7 @@ export function legacyRedirectTarget(value: unknown): string | null {
 }
 
 export function storeUrl(locale: Locale, value?: string | null): string {
+  let destination = `https://marketplace.nvidia.com/${locale}/consumer/graphics-cards/?locale=${locale}&manufacturer=NVIDIA`;
   if (value) {
     try {
       const url = new URL(value);
@@ -63,10 +64,12 @@ export function storeUrl(locale: Locale, value?: string | null): string {
         !url.password &&
         value.length <= 2048
       )
-        return url.toString();
+        destination = value;
     } catch {
       /* Fall back to the known store, never an executable URL. */
     }
   }
-  return `https://marketplace.nvidia.com/${locale}/consumer/graphics-cards/?locale=${locale}&manufacturer=NVIDIA`;
+  // Keep the original site's referrer hop for every retailer and locale.
+  // Encode the complete destination once so signed basket parameters survive.
+  return `https://nvidia.com.plen.io/?url=${encodeURIComponent(destination)}`;
 }

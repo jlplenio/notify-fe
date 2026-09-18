@@ -1,4 +1,5 @@
 import { ThemeProvider } from "next-themes";
+import { Analytics } from "@vercel/analytics/react";
 import { type AppType } from "next/app";
 import Head from "next/head";
 import "~/styles/globals.css";
@@ -40,6 +41,7 @@ const MyApp: AppType = ({ Component, pageProps }) => (
       <link rel="canonical" href="https://notify-fe.plen.io/" />
     </Head>
     <Component {...pageProps} />
+    <Analytics />
   </ThemeProvider>
 );
 
