@@ -714,6 +714,35 @@ export default function RealtimeMonitor() {
               Notifications paused. Select a card to receive alerts.
             </p>
           )}
+          <a
+            className={styles.sponsorBanner}
+            href="https://www.webshare.io/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Proudly enabled by Webshare proxies"
+            data-testid="webshare-sponsor"
+          >
+            <span className={styles.sponsorKicker}>Proxy infrastructure</span>
+            <span className={styles.sponsorStatement}>
+              <span>Proudly enabled by</span>
+              <Image
+                className={styles.sponsorLogoLight}
+                src="/webshare-logo.svg"
+                width={229}
+                height={33}
+                alt="Webshare"
+              />
+              <Image
+                className={styles.sponsorLogoDark}
+                src="/webshare-logo-white.svg"
+                width={229}
+                height={33}
+                alt="Webshare"
+              />
+              <span>proxies</span>
+            </span>
+            <ArrowUpRight size={15} aria-hidden="true" />
+          </a>
           <section
             className={styles.supportBanner}
             aria-labelledby="support-title"
@@ -784,7 +813,7 @@ export default function RealtimeMonitor() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Github size={14} /> Source
+              <Github size={14} /> Source &amp; discussions
             </a>
           </nav>
         </footer>

@@ -109,6 +109,14 @@ async function setup(
   );
   await context.route("**/*", (route) => {
     const url = new URL(route.request().url());
+    // Analytics remains enabled on the website. Stub its development loader
+    // here so the local UI test never fetches the script or sends telemetry.
+    if (
+      url.href === "https://va.vercel-scripts.com/v1/script.debug.js" &&
+      route.request().method() === "GET" &&
+      route.request().resourceType() === "script"
+    )
+      return route.fulfill({ contentType: "application/javascript", body: "" });
     if (url.origin === base.origin) return route.continue();
     unexpectedRequests.push(url.hostname);
     return route.abort();
@@ -476,7 +484,7 @@ try {
   await page.locator("#locale").selectOption("de-at");
   await page
     .getByTestId("monitor-health")
-    .getByText("RTX 5070 checks unavailable", { exact: true })
+    .getByText("RTX 5070 checks temporarily delayed", { exact: true })
     .waitFor();
   assert.equal(await page.getByTestId("stock-5070").innerText(), "Unconfirmed");
   assert.equal(
@@ -506,7 +514,7 @@ try {
   deliver(staleStock);
   await page
     .getByTestId("monitor-health")
-    .getByText("RTX 5080 checks unavailable", { exact: true })
+    .getByText("RTX 5080 checks temporarily delayed", { exact: true })
     .waitFor();
   assert.equal(await page.getByTestId("stock-5080").innerText(), "Unconfirmed");
   assert.equal(
@@ -580,7 +588,7 @@ try {
   deliver(expired);
   await page
     .getByTestId("monitor-health")
-    .getByText("RTX 5090 checks unavailable", { exact: true })
+    .getByText("RTX 5090 checks temporarily delayed", { exact: true })
     .waitFor();
   assert.equal(await page.getByTestId("stock-5090").innerText(), "Unconfirmed");
   assert.equal(await page.getByTestId("last-check-5090").count(), 0);
@@ -1157,7 +1165,7 @@ try {
   assert.deepEqual(
     unexpectedRequests,
     [],
-    "No NVIDIA, SKU blob, analytics, proxy or Telegram browser requests",
+    "No unmocked external requests; analytics loader and WebSockets are stubbed",
   );
   console.log(
     "PASS: blocked storage is non-fatal; no browser JS errors or external requests",

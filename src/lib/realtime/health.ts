@@ -63,12 +63,12 @@ export function stockHealthCopy(view: MonitorView): HealthCopy {
   return {
     title:
       affected.length > 0 && affected.length < 3
-        ? `RTX ${affected.join(" / ")} checks unavailable`
-        : "Stock checks unavailable",
+        ? `RTX ${affected.join(" / ")} checks temporarily delayed`
+        : "Stock checks temporarily delayed",
     detail:
       affected.length > 0 && affected.length < 3
-        ? `${affected.length === 1 ? "This card’s stock is" : "These cards’ stock is"} unconfirmed. Other cards continue to be monitored.`
-        : "Fresh stock results are unavailable. Alerts may be delayed.",
+        ? `Retrying automatically for ${affected.length === 1 ? "this card" : "these cards"}. Other cards continue to be monitored.`
+        : "Retrying automatically. Stock updates and alerts may be delayed.",
     tone: "warning",
   };
 }

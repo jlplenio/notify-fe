@@ -140,17 +140,23 @@ void test("only the affected cards are named in a stock warning", () => {
   p.cards[0]!.status = "invalid_response";
   p.cards[0]!.available = null;
   p.cards[0]!.observedAt = null;
-  assert.equal(stockHealthCopy(view(p)).title, "RTX 5070 checks unavailable");
+  assert.equal(
+    stockHealthCopy(view(p)).title,
+    "RTX 5070 checks temporarily delayed",
+  );
   assert.match(stockHealthCopy(view(p)).detail, /Other cards continue/);
   assert.equal(stockHealthCopy(view(p)).tone, "warning");
   p.cards[1]!.status = "timeout";
   p.cards[1]!.observedAt = START - 30_000;
   assert.equal(
     stockHealthCopy(view(p)).title,
-    "RTX 5070 / 5080 checks unavailable",
+    "RTX 5070 / 5080 checks temporarily delayed",
   );
   p.cards = [];
-  assert.equal(stockHealthCopy(view(p)).title, "Stock checks unavailable");
+  assert.equal(
+    stockHealthCopy(view(p)).title,
+    "Stock checks temporarily delayed",
+  );
   assert.doesNotMatch(stockHealthCopy(view(p)).detail, /Other cards continue/);
   assert.equal(
     stockHealthCopy(view()).tone,
