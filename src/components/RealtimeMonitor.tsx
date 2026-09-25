@@ -716,7 +716,7 @@ export default function RealtimeMonitor() {
           )}
           <a
             className={styles.sponsorBanner}
-            href="https://www.webshare.io/"
+            href="https://www.webshare.io/?referral_code=w6nfvip4qp3g"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Proudly enabled by Webshare proxies"
