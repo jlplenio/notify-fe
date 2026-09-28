@@ -40,6 +40,7 @@ export function demoPacket(
     models: [...MODELS],
     status: "healthy",
     lastPublisherAt: now,
+    monitorHealthPercent: 100,
     staleAfterMs: 60_000,
     catalogStaleAfterMs: 75_000,
     offlineAfterMs: 75_000,
@@ -89,4 +90,50 @@ export function demoPacket(
     })),
     alerts: available ? [available] : [],
   };
+}
+
+export const PREVIEW_SCENARIOS = [
+  ["healthy", "All good"],
+  ["5090-delayed", "5090 delayed"],
+  ["5080-delayed", "5080 delayed"],
+  ["all-delayed", "All delayed"],
+] as const;
+export type PreviewScenario = (typeof PREVIEW_SCENARIOS)[number][0];
+
+/** Explicit local scenarios only; live packets never use these transformations. */
+export function previewPacket(
+  locale: Locale,
+  now: number,
+  sequence = 1,
+  available: Model | null = null,
+  scenario: PreviewScenario = "5080-delayed",
+): Packet {
+  const packet = demoPacket(locale, now, sequence, available);
+  packet.monitorHealthPercent =
+    scenario === "healthy" ? 100 : scenario === "all-delayed" ? 0 : 72;
+  const delayed = packet.cards.filter(
+    (card) =>
+      card.model !== available &&
+      (scenario === "all-delayed" || scenario === `${card.model}-delayed`),
+  );
+  if (delayed.length === 0) return packet;
+  for (const card of delayed) {
+    card.status = "timeout";
+    card.observedAt = now - 45_000;
+  }
+  const failures = delayed.length * 3;
+  packet.status = "source_degraded";
+  packet.metrics!.valid -= failures;
+  packet.metrics!.http200 -= failures;
+  packet.metrics!.failed += failures;
+  packet.metrics!.windowValid -= failures;
+  packet.metrics!.windowFailed += failures;
+  packet.metrics!.lastStatus = null;
+  if (delayed.length === packet.cards.length)
+    packet.metrics!.lastSuccessAt = now - 45_000;
+  packet.globalMetrics.valid -= failures;
+  packet.globalMetrics.failed += failures;
+  packet.globalMetrics.windowValid -= failures;
+  packet.globalMetrics.windowFailed += failures;
+  return packet;
 }

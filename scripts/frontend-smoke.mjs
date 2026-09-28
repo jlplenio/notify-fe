@@ -134,6 +134,10 @@ async function setup(
         "5070,5080,5090",
       );
       assert.equal(new URL(socket.url()).searchParams.get("client"), "website");
+      assert.equal(
+        new URL(socket.url()).searchParams.get("monitorHealth"),
+        "1",
+      );
       sockets.set(socket, locale);
       totalConnections++;
       socket.onClose(() => sockets.delete(socket));
@@ -197,6 +201,27 @@ try {
     .getByText("Stock checks active", { exact: true })
     .waitFor();
   assert.equal(await page.getByRole("switch").count(), 3);
+  phase = "optional monitor health percentage";
+  const capacity = page.getByTestId("monitor-health-value");
+  assert.equal(await capacity.innerText(), "100%");
+  assert.equal(await page.getByRole("progressbar").count(), 0);
+  for (const value of [28, 0, null, undefined, 100]) {
+    const p = demoPacket("de-de", Date.now(), ++sequence);
+    if (value === undefined) delete p.monitorHealthPercent;
+    else p.monitorHealthPercent = value;
+    deliver({ ...p, type: "health" });
+    await waitFor(
+      async () =>
+        (await capacity.innerText()) ===
+        (value == null ? "Waiting" : `${value}%`),
+      "Monitor health did not update",
+    );
+    assert.equal(await page.getByTestId("availability-alert").count(), 0);
+    assert.doesNotMatch(
+      await page.getByTestId("monitor-health-bar").innerText(),
+      /proxy|proxies|42|formula|threshold/i,
+    );
+  }
   for (const model of ["5090", "5080", "5070"])
     assert.equal(
       await page
@@ -1033,7 +1058,10 @@ try {
     await setup(popupContext, false, false, true);
     const popupPage = await popupContext.newPage();
     await popupPage.goto(new URL("/?demo=1&region=de-de", base).href);
-    await popupPage.getByText("Stock checks active", { exact: true }).waitFor();
+    await popupPage
+      .getByTestId("stock-5080")
+      .getByText("Unconfirmed", { exact: true })
+      .waitFor();
     await popupPage
       .getByRole("button", { name: "Auto-open off", exact: true })
       .click();
@@ -1088,7 +1116,8 @@ try {
     const blockedPage = await blockingContext.newPage();
     await blockedPage.goto(new URL("/?demo=1&region=de-de", base).href);
     await blockedPage
-      .getByText("Stock checks active", { exact: true })
+      .getByTestId("stock-5080")
+      .getByText("Unconfirmed", { exact: true })
       .waitFor();
     await blockedPage
       .getByRole("button", { name: "Auto-open off", exact: true })

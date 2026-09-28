@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { type Locale, type Model } from "../lib/realtime/catalog.ts";
-import { demoPacket } from "../lib/realtime/demo.ts";
+import {
+  demoPacket,
+  previewPacket,
+  type PreviewScenario,
+} from "../lib/realtime/demo.ts";
 import {
   MonitorState,
   subscriptionUrl,
@@ -46,6 +50,12 @@ export function useMonitor({
 }) {
   const [view, setView] = useState<MonitorView>(emptyView);
   const [demoDropAt, setDemoDropAt] = useState<number | null>(null);
+  const [demoScenario, setDemoScenario] =
+    useState<PreviewScenario>("5080-delayed");
+  const selectedScenario = useRef<PreviewScenario>("5080-delayed");
+  const scenarioRef = useRef<((scenario: PreviewScenario) => void) | null>(
+    null,
+  );
   const callback = useRef(onAlerts);
   callback.current = onAlerts;
   const reconnectRef = useRef<(() => void) | null>(null);
@@ -87,7 +97,13 @@ export function useMonitor({
         ]),
       );
       const send = (type: Packet["type"], alerts: Model[] = []) => {
-        const packet = demoPacket(locale, Date.now(), ++sequence, positive);
+        const packet = previewPacket(
+          locale,
+          Date.now(),
+          ++sequence,
+          positive,
+          selectedScenario.current,
+        );
         packet.type = type;
         packet.alerts = alerts;
         packet.cards.forEach((card) => {
@@ -98,6 +114,16 @@ export function useMonitor({
       send("snapshot");
       let reset: ReturnType<typeof setTimeout> | undefined;
       let pending: ReturnType<typeof setTimeout> | undefined;
+      scenarioRef.current = (scenario) => {
+        clearTimeout(pending);
+        clearTimeout(reset);
+        pending = undefined;
+        positive = null;
+        setDemoDropAt(null);
+        selectedScenario.current = scenario;
+        setDemoScenario(scenario);
+        send("health");
+      };
       demoRef.current = (model) => {
         if (positive !== null || pending !== undefined) return;
         // Simulate an arriving alert outside the click handler. No tab is
@@ -120,6 +146,7 @@ export function useMonitor({
       return () => {
         disposed = true;
         demoRef.current = null;
+        scenarioRef.current = null;
         clearInterval(heartbeat);
         clearInterval(ticker);
         clearTimeout(pending);
@@ -295,5 +322,8 @@ export function useMonitor({
         ? Math.max(0, Math.ceil((demoDropAt - Date.now()) / 1000))
         : null,
     simulateDrop: (model: Model) => demoRef.current?.(model),
+    demoScenario,
+    selectDemoScenario: (scenario: PreviewScenario) =>
+      scenarioRef.current?.(scenario),
   };
 }

@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { MonitorView } from "../../hooks/useMonitor.ts";
 import { demoPacket } from "./demo.ts";
-import { cardCatalogNotice, catalogNotice, stockHealthCopy } from "./health.ts";
+import {
+  cardCatalogNotice,
+  catalogNotice,
+  stockHealthCopy,
+  monitorHealthPercent,
+} from "./health.ts";
 import { MonitorState, type Packet } from "./protocol.ts";
 
 const START = 1_788_900_000_000;
@@ -20,6 +25,35 @@ function view(
     issue: null,
   };
 }
+
+void test("monitor health displays only the current producer percentage", () => {
+  for (const percent of [0, 28, 100]) {
+    const p = demoPacket("de-de", START);
+    p.monitorHealthPercent = percent;
+    // Stock state cannot supply or change the producer's capacity percentage.
+    p.status = "source_degraded";
+    p.cards[0]!.status = "blocked";
+    assert.equal(monitorHealthPercent(view(p)), percent);
+  }
+});
+
+void test("unknown, disconnected and expired capacity stays unknown", () => {
+  const p = demoPacket("de-de", START);
+  assert.equal(monitorHealthPercent(view(p)), 100);
+  assert.equal(
+    monitorHealthPercent({ ...view(p), connection: "reconnecting" }),
+    null,
+  );
+  assert.equal(monitorHealthPercent(view(p, p.offlineAfterMs)), null);
+  assert.equal(
+    monitorHealthPercent({ ...view(p), health: "transport_silent" }),
+    null,
+  );
+  delete p.monitorHealthPercent;
+  assert.equal(monitorHealthPercent(view(p)), null);
+  p.monitorHealthPercent = null;
+  assert.equal(monitorHealthPercent(view(p)), null);
+});
 
 void test("legacy feeds get generic information without guessing which cards are omitted", () => {
   const p = demoPacket("de-de", START);

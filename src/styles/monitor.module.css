@@ -273,6 +273,29 @@
   background: #28291c;
   border-color: #555336;
 }
+.demoScenarios {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0 4px;
+}
+.demoScenarios button {
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 400;
+  text-decoration: none;
+}
+.demoScenarios button:hover,
+.demoScenarios button[aria-pressed="true"] {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  border-color: currentColor;
+}
+.demoScenarios button[aria-pressed="true"] {
+  font-weight: 600;
+}
 .watchlist {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -366,37 +389,44 @@
   background: var(--green-surface);
 }
 .healthPanel {
+  --health-signal: var(--secondary-ink);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 18px;
-  padding: 10px 18px;
+  gap: 5px 16px;
+  padding: 9px 18px;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
   background: var(--subtle);
   color: var(--secondary-ink);
+  box-shadow: inset 2px 0
+    color-mix(in srgb, var(--health-signal) 65%, transparent);
 }
 .healthHealthy {
-  color: var(--green);
-  background: var(--green-surface);
+  --health-signal: var(--green);
+  background: color-mix(in srgb, var(--green-surface) 65%, var(--surface));
 }
 .healthWarning {
-  color: #856225;
-  background: #fbf4e5;
+  --health-signal: #89621f;
+  background: #faf7ef;
 }
 :global(.dark) .healthWarning {
-  color: #e2c67e;
-  background: #322c1e;
+  --health-signal: #dec184;
+  background: #26271e;
 }
 .healthTitle {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 14px;
+  gap: 8px;
+  color: var(--health-signal);
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1.5;
 }
 .healthHeading {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 4px;
 }
@@ -408,17 +438,109 @@
   animation: breathe 3s ease-in-out infinite;
 }
 .healthReport {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
   color: var(--secondary-ink);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.5;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.healthReport {
-  margin-left: auto;
+.healthHealthy .healthReport {
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
 }
 .healthDetail {
+  order: 2;
   flex-basis: 100%;
-  font-size: 13px;
+  padding-left: 24px;
+  color: var(--secondary-ink);
+  font-size: 12px;
   line-height: 1.5;
+}
+.healthCapacity {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  --capacity-color: var(--green);
+}
+.healthPanel:not([data-tone="healthy"]) .healthCapacity {
+  grid-column: 2;
+  grid-row: 2;
+  justify-content: flex-end;
+  justify-self: end;
+}
+.healthPanel:not([data-tone="healthy"]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.healthPanel:not([data-tone="healthy"]) .healthHeading {
+  grid-column: 1;
+  grid-row: 1;
+}
+.healthPanel:not([data-tone="healthy"]) .healthReport {
+  grid-column: 2;
+  grid-row: 1;
+}
+.healthPanel:not([data-tone="healthy"]) .healthDetail {
+  grid-column: 1;
+  grid-row: 2;
+}
+.healthCapacityValue {
+  color: var(--capacity-color);
+  min-width: 3ch;
+  text-align: right;
+  font-size: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.healthCapacityLabel {
+  color: var(--secondary-ink);
+  font-size: inherit;
+}
+.healthInfoButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  margin: -3px 0;
+  border-radius: 3px;
+}
+.healthInfoButton svg {
+  flex-shrink: 0;
+  opacity: 0.55;
+}
+.healthInfoButton:hover,
+.healthInfoButton[data-state="open"] {
+  color: var(--ink);
+}
+.healthInfoButton:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+.healthInfoSupport {
+  margin-top: 10px;
+}
+.healthCapacity[data-tone="partial"] {
+  --capacity-color: #906519;
+}
+.healthCapacity[data-tone="low"] {
+  --capacity-color: #ad5142;
+}
+.healthCapacity[data-tone="waiting"] {
+  --capacity-color: var(--secondary-ink);
+}
+:global(.dark) .healthCapacity[data-tone="partial"] {
+  --capacity-color: #e2c67e;
+}
+:global(.dark) .healthCapacity[data-tone="low"] {
+  --capacity-color: #eda58c;
 }
 .catalogInfoButton {
   display: inline-grid;
@@ -477,7 +599,9 @@
   min-width: 44px;
   min-height: 44px;
   border-radius: 6px;
-  margin: -8px -8px -8px 0;
+  flex-shrink: 0;
+  margin: -10px 0;
+  color: var(--secondary-ink);
 }
 .retry:hover {
   background: #00000008;
@@ -1030,17 +1154,49 @@
     font-size: 13px;
   }
   .healthPanel {
-    padding: 10px 12px;
-    gap: 4px 12px;
+    padding: 9px 12px;
+    gap: 5px 10px;
   }
   .healthTitle {
-    font-size: 14px;
+    font-size: 13px;
   }
   .healthReport {
-    font-size: 12px;
+    order: 1;
+    flex-basis: 100%;
+    text-align: right;
+    font-size: 11px;
+  }
+  .healthHealthy .healthReport {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .healthCapacity {
+    gap: 6px;
+    font-size: 11px;
+  }
+  .healthPanel:not([data-tone="healthy"]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .healthPanel:not([data-tone="healthy"]) .healthReport {
+    grid-column: 1;
+    grid-row: 3;
+    padding-left: 24px;
+  }
+  .healthPanel:not([data-tone="healthy"]) .healthHeading {
+    grid-column: 1;
+  }
+  .healthPanel:not([data-tone="healthy"]) .healthCapacity {
+    grid-column: 1;
+    grid-row: 4;
+    padding-left: 24px;
+  }
+  .healthPanel:not([data-tone="healthy"]) .healthDetail {
+    grid-column: 1;
+    grid-row: 2;
   }
   .healthDetail {
-    font-size: 13px;
+    order: 3;
+    font-size: 12px;
   }
   .columnLabels,
   .stockCard {

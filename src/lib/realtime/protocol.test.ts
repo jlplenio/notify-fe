@@ -14,6 +14,23 @@ import {
 } from "./protocol.ts";
 
 const START = 1_788_900_000_000;
+void test("monitor health is optional and validates only a bounded percentage", () => {
+  const p = demoPacket("de-de", START);
+  delete p.monitorHealthPercent;
+  assert.equal(packetSchema.safeParse(p).success, true);
+  for (const percent of [null, 0, 28, 100])
+    assert.equal(
+      packetSchema.parse({ ...p, monitorHealthPercent: percent })
+        .monitorHealthPercent,
+      percent,
+    );
+  for (const percent of [-1, 101, 1.5, "50", true, { healthy: 42 }])
+    assert.equal(
+      packetSchema.safeParse({ ...p, monitorHealthPercent: percent }).success,
+      false,
+    );
+});
+
 void test("catalog evidence is optional, bounded, unique and not from the future", () => {
   const p = demoPacket("de-de", START);
   assert.equal(packetSchema.safeParse(p).success, true);
@@ -404,6 +421,7 @@ void test("WebSocket URL cannot contain credentials, arbitrary paths or insecure
   const url = new URL(subscriptionUrl("wss://monitor.example/v1/ws", "de-de"));
   assert.equal(url.searchParams.get("models"), "5070,5080,5090");
   assert.equal(url.searchParams.get("client"), "website");
+  assert.equal(url.searchParams.get("monitorHealth"), "1");
   for (const bad of [
     "ws://monitor.example/v1/ws",
     "https://monitor.example/v1/ws",

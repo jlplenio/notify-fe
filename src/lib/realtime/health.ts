@@ -2,6 +2,23 @@ import type { MonitorView } from "../../hooks/useMonitor.ts";
 import type { Model } from "./catalog.ts";
 import { unhealthyStockModels } from "./protocol.ts";
 
+/** Display the producer's percentage only while the feed remains current. */
+export function monitorHealthPercent(view: MonitorView): number | null {
+  const packet = view.packet;
+  const now = view.serverNow;
+  if (
+    view.connection !== "connected" ||
+    ["waiting", "offline", "transport_silent"].includes(view.health) ||
+    !packet ||
+    now === null ||
+    packet.lastPublisherAt === null ||
+    now < packet.lastPublisherAt ||
+    now - packet.lastPublisherAt >= packet.offlineAfterMs
+  )
+    return null;
+  return packet.monitorHealthPercent ?? null;
+}
+
 interface HealthCopy {
   title: string;
   detail: string;

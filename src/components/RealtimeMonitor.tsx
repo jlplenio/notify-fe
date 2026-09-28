@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ModeToggle } from "./ThemeToggle";
 import { ListenerSummary } from "./ListenerSummary";
+import { MonitorHealthBar } from "./MonitorHealthBar";
 import { TelegramSettings } from "./TelegramSettings";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { env } from "~/env";
@@ -48,6 +49,7 @@ import {
   type Packet,
 } from "~/lib/realtime/protocol";
 import { autoOpenStores, previewStoreUrl } from "~/lib/realtime/actions";
+import { PREVIEW_SCENARIOS } from "~/lib/realtime/demo";
 import {
   cardCatalogNotice,
   catalogNotice,
@@ -510,6 +512,24 @@ export default function RealtimeMonitor() {
                   <ArrowUpRight size={14} />
                 </button>
               )}
+              {demo && (
+                <div
+                  className={styles.demoScenarios}
+                  role="group"
+                  aria-label="Preview scenarios"
+                >
+                  {PREVIEW_SCENARIOS.map(([scenario, label]) => (
+                    <button
+                      key={scenario}
+                      type="button"
+                      aria-pressed={monitor.demoScenario === scenario}
+                      onClick={() => monitor.selectDemoScenario(scenario)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -602,7 +622,20 @@ export default function RealtimeMonitor() {
                     testId="catalog-info"
                   />
                 )}
+                {health.tone === "warning" &&
+                  monitor.connection !== "browser_offline" && (
+                    <button
+                      type="button"
+                      className={styles.retry}
+                      onClick={monitor.reconnect}
+                      aria-label="Reconnect to monitor"
+                      title="Reconnect to monitor"
+                    >
+                      <RefreshCw size={14} />
+                    </button>
+                  )}
               </div>
+              <MonitorHealthBar monitor={monitor} />
               <span
                 className={styles.healthReport}
                 data-testid="last-heartbeat"
@@ -612,17 +645,6 @@ export default function RealtimeMonitor() {
                   ? `Last heartbeat · ${relativeTime(packet.lastPublisherAt, now).toLowerCase()}`
                   : "Last heartbeat · waiting"}
               </span>
-              {health.tone === "warning" &&
-                monitor.connection !== "browser_offline" && (
-                  <button
-                    type="button"
-                    className={styles.retry}
-                    onClick={monitor.reconnect}
-                    aria-label="Reconnect to monitor"
-                  >
-                    <RefreshCw size={16} />
-                  </button>
-                )}
               {health.tone !== "healthy" && (
                 <p className={styles.healthDetail}>{health.detail}</p>
               )}

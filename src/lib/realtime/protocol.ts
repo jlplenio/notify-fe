@@ -44,6 +44,13 @@ export const packetSchema = z
     models: z.array(z.enum(MODELS)).min(1).max(3),
     status: z.enum(["healthy", "source_degraded", "offline"]),
     lastPublisherAt: timestamp,
+    monitorHealthPercent: z
+      .number()
+      .int()
+      .min(0)
+      .max(100)
+      .nullable()
+      .optional(),
     staleAfterMs: counter.positive(),
     catalogStaleAfterMs: counter.positive(),
     offlineAfterMs: counter.positive(),
@@ -166,6 +173,7 @@ export function subscriptionUrl(endpoint: string, locale: Locale): string {
   // Keep the whole locale visible; alert preferences are applied locally.
   url.searchParams.set("models", MODELS.join(","));
   url.searchParams.set("client", "website");
+  url.searchParams.set("monitorHealth", "1");
   return url.toString();
 }
 
