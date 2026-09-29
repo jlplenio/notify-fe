@@ -16,6 +16,19 @@ Your preferences are saved on your device. The watchlist shows reported stock,
 last sightings and whether stock checks are working. “Last seen in stock” is
 historical; check the store for current availability. Alerts do not make purchases.
 
+### Sponsor
+
+A huge thank-you to the awesome team at **Webshare** for sponsoring our proxies.
+Their generous support makes it possible to keep Notify-FE running and stock
+alerts free for everyone.
+
+<a href="https://www.webshare.io/?referral_code=w6nfvip4qp3g">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/webshare-banner-dark.svg">
+    <img src=".github/webshare-banner.svg" alt="Proxy infrastructure sponsored by Webshare" width="420">
+  </picture>
+</a>
+
 ### Telegram
 
 Open **Telegram** next to **Auto-open**, enter your own bot token and chat ID (or
