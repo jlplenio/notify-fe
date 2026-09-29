@@ -62,6 +62,27 @@
   "ct3aMetadata": {
     "initVersion": "7.26.0"
   },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-tailwindcss"
+    ],
+    "tailwindConfig": "./src/styles/tailwind.config.ts"
+  },
+  "postcss": {
+    "plugins": {
+      "tailwindcss": {
+        "config": "./src/styles/tailwind.config.ts"
+      },
+      "autoprefixer": {}
+    }
+  },
+  "cspell": {
+    "version": "0.2",
+    "words": [
+      "NVGFT",
+      "Skus"
+    ]
+  },
   "engines": {
     "node": ">=22.13.0"
   },
