@@ -70,7 +70,8 @@ export function stockHealthCopy(view: MonitorView): HealthCopy {
   if (view.health === "healthy")
     return {
       title: "Stock checks active",
-      detail: "Receiving live stock updates.",
+      detail:
+        "Stock checks run every 10 seconds. Changes are sent immediately.",
       tone: "healthy",
     };
   const affected =
@@ -80,12 +81,12 @@ export function stockHealthCopy(view: MonitorView): HealthCopy {
   return {
     title:
       affected.length > 0 && affected.length < 3
-        ? `RTX ${affected.join(" / ")} checks temporarily delayed`
-        : "Stock checks temporarily delayed",
+        ? `RTX ${affected.join(" / ")} stock status unavailable`
+        : "Stock status unavailable",
     detail:
       affected.length > 0 && affected.length < 3
-        ? `Retrying automatically for ${affected.length === 1 ? "this card" : "these cards"}. Other cards continue to be monitored.`
-        : "Retrying automatically. Stock updates and alerts may be delayed.",
+        ? "Waiting for the next update. Checks continue automatically; other cards continue to be monitored."
+        : "Waiting for the next update. Checks continue automatically.",
     tone: "warning",
   };
 }

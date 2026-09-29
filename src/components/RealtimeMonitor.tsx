@@ -193,7 +193,8 @@ function StockCard({
     isStockCheckFresh(card, now, monitor.packet?.staleAfterMs ?? 60_000);
   const grace =
     connected &&
-    isStockCheckInGrace(card, now, monitor.packet?.staleAfterMs ?? 60_000);
+    monitor.packet !== null &&
+    isStockCheckInGrace(card, now, monitor.packet);
   const available = fresh && card?.available === true;
   const known = fresh && card?.available !== null;
   const stamp = card?.lastAvailableAt;
@@ -232,15 +233,15 @@ function StockCard({
                 : known
                   ? "Out of stock"
                   : card
-                    ? "Unconfirmed"
+                    ? "Status unavailable"
                     : "Awaiting data"}
         </span>
-        {grace && (
+        {connected && card && !fresh && !grace && (
           <span
             className={styles.exactTime}
-            data-testid={`last-check-${model}`}
+            data-testid={`stock-update-${model}`}
           >
-            Last confirmed {relativeTime(card?.observedAt, now).toLowerCase()}
+            Waiting for the next update
           </span>
         )}
         {available && monitor.packet && (
@@ -639,7 +640,7 @@ export default function RealtimeMonitor() {
               <span
                 className={styles.healthReport}
                 data-testid="last-heartbeat"
-                title="The monitor sends a heartbeat about every 30 seconds. Availability changes are pushed as soon as detected."
+                title="Stock checks run every 10 seconds. Health summaries arrive about every 30 seconds; availability changes are pushed as soon as detected."
               >
                 {packet?.lastPublisherAt != null
                   ? `Last heartbeat · ${relativeTime(packet.lastPublisherAt, now).toLowerCase()}`
@@ -804,9 +805,9 @@ export default function RealtimeMonitor() {
                 settings are saved on this device.
               </p>
               <p>
-                Heartbeats arrive about every 30 seconds. Stock changes are
-                pushed as soon as detected. Listener totals count connections,
-                not unique people.
+                Stock checks run every 10 seconds. Health summaries arrive about
+                every 30 seconds; stock changes are pushed as soon as detected.
+                Listener totals count connections, not unique people.
               </p>
               <p>
                 Last in stock is the latest confirmed sighting, not a guarantee

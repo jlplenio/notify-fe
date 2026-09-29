@@ -509,9 +509,12 @@ try {
   await page.locator("#locale").selectOption("de-at");
   await page
     .getByTestId("monitor-health")
-    .getByText("RTX 5070 checks temporarily delayed", { exact: true })
+    .getByText("RTX 5070 stock status unavailable", { exact: true })
     .waitFor();
-  assert.equal(await page.getByTestId("stock-5070").innerText(), "Unconfirmed");
+  assert.equal(
+    await page.getByTestId("stock-5070").innerText(),
+    "Status unavailable",
+  );
   assert.equal(
     await page.getByTestId("stock-5080").innerText(),
     "Out of stock",
@@ -539,9 +542,12 @@ try {
   deliver(staleStock);
   await page
     .getByTestId("monitor-health")
-    .getByText("RTX 5080 checks temporarily delayed", { exact: true })
+    .getByText("RTX 5080 stock status unavailable", { exact: true })
     .waitFor();
-  assert.equal(await page.getByTestId("stock-5080").innerText(), "Unconfirmed");
+  assert.equal(
+    await page.getByTestId("stock-5080").innerText(),
+    "Status unavailable",
+  );
   assert.equal(
     await page.getByTestId("stock-5090").innerText(),
     "Out of stock",
@@ -566,9 +572,11 @@ try {
   transientCard.observedAt = transient.serverTime - 10_000;
   deliver(transient);
   await page
-    .getByTestId("last-check-5090")
-    .getByText(/Last confirmed 1\ds ago/)
+    .getByTestId("stock-5090")
+    .getByText("Out of stock", { exact: true })
     .waitFor();
+  assert.equal(await page.getByTestId("last-check-5090").count(), 0);
+  assert.equal(await page.getByText(/Last confirmed/).count(), 0);
   assert.equal(
     await page.getByTestId("stock-5090").innerText(),
     "Out of stock",
@@ -613,9 +621,16 @@ try {
   deliver(expired);
   await page
     .getByTestId("monitor-health")
-    .getByText("RTX 5090 checks temporarily delayed", { exact: true })
+    .getByText("RTX 5090 stock status unavailable", { exact: true })
     .waitFor();
-  assert.equal(await page.getByTestId("stock-5090").innerText(), "Unconfirmed");
+  assert.equal(
+    await page.getByTestId("stock-5090").innerText(),
+    "Status unavailable",
+  );
+  assert.equal(
+    await page.getByTestId("stock-update-5090").innerText(),
+    "Waiting for the next update",
+  );
   assert.equal(await page.getByTestId("last-check-5090").count(), 0);
   publish("de-de", null, "health");
   await page
@@ -624,7 +639,7 @@ try {
     .waitFor();
   await page.getByRole("button", { name: "Auto-open on", exact: true }).click();
   console.log(
-    "PASS: transient failures retain labelled last-confirmed stock; 30-second gaps warn; cached positives never sound or open a shop",
+    "PASS: transient failures retain last-known stock without a countdown; reported 30-second gaps warn; cached positives never sound or open a shop",
   );
 
   phase = "persistent choices without a socket reconnect";
@@ -742,12 +757,113 @@ try {
     .waitFor();
   await page
     .getByTestId("stock-5090")
-    .getByText("Unconfirmed", { exact: true })
+    .getByText("Status unavailable", { exact: true })
     .waitFor();
   console.log(
     "PASS: pong does not fake source health; silent source becomes offline and stock unconfirmed",
   );
   await context.close();
+
+  phase = "brief failure remains stable until a heartbeat confirms a stock gap";
+  latest.clear();
+  const heartbeatContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+  });
+  await setup(heartbeatContext);
+  const heartbeatPage = await heartbeatContext.newPage();
+  await heartbeatPage.goto(new URL("/?region=de-de", base).href);
+  await heartbeatPage
+    .getByText("Stock checks active", { exact: true })
+    .waitFor();
+  await heartbeatPage.clock.install();
+  const brief = demoPacket("de-de", Date.now(), ++sequence);
+  brief.type = "health";
+  brief.status = "source_degraded";
+  brief.monitorHealthPercent = 72;
+  const briefCard = brief.cards.find((c) => c.model === "5090");
+  briefCard.status = "blocked";
+  briefCard.observedAt = brief.serverTime - 20_000;
+  deliver(brief);
+  await heartbeatPage
+    .getByTestId("monitor-health-value")
+    .getByText("72%", { exact: true })
+    .waitFor();
+  await heartbeatPage.clock.fastForward(11_000);
+  assert.equal(
+    await heartbeatPage.getByTestId("stock-5090").innerText(),
+    "Out of stock",
+  );
+  assert.equal(
+    await heartbeatPage.getByTestId("monitor-health").getAttribute("data-tone"),
+    "healthy",
+  );
+  assert.equal(await heartbeatPage.getByText(/Last confirmed/).count(), 0);
+  await heartbeatPage.clock.fastForward(18_000);
+  assert.equal(
+    await heartbeatPage.getByTestId("stock-5090").innerText(),
+    "Out of stock",
+  );
+  assert.equal(await heartbeatPage.getByTestId("stock-update-5090").count(), 0);
+
+  const failed = demoPacket("de-de", brief.serverTime + 30_000, ++sequence);
+  failed.type = "health";
+  failed.status = "source_degraded";
+  failed.cards = failed.cards.map((c) =>
+    c.model === "5090" ? { ...briefCard } : c,
+  );
+  deliver(failed);
+  await heartbeatPage
+    .getByTestId("stock-5090")
+    .getByText("Status unavailable", { exact: true })
+    .waitFor();
+  await heartbeatPage
+    .getByTestId("stock-update-5090")
+    .getByText("Waiting for the next update", { exact: true })
+    .waitFor();
+  assert.doesNotMatch(
+    await heartbeatPage.getByTestId("monitor-health").innerText(),
+    /offline/i,
+  );
+  assert.equal(
+    await heartbeatPage.getByTestId("stock-5080").innerText(),
+    "Out of stock",
+  );
+  assert.ok(
+    (await heartbeatPage.getByTestId("last-seen-5090").innerText()).length > 0,
+  );
+  for (const width of [320, 390, 1365]) {
+    await heartbeatPage.setViewportSize({ width, height: 1000 });
+    assert.ok(
+      await heartbeatPage.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+      `Stock status fits ${width}px`,
+    );
+    await heartbeatPage.screenshot({
+      path: resolve(screenshots, `stock-heartbeat-gap-${width}.png`),
+      fullPage: true,
+      animations: "disabled",
+    });
+  }
+  const recovery = demoPacket("de-de", brief.serverTime + 60_000, ++sequence);
+  recovery.type = "health";
+  deliver(recovery);
+  await heartbeatPage
+    .getByText("Stock checks active", { exact: true })
+    .waitFor();
+  assert.equal(
+    await heartbeatPage.getByTestId("stock-5090").innerText(),
+    "Out of stock",
+  );
+  assert.equal(await heartbeatPage.getByTestId("stock-update-5090").count(), 0);
+  assert.equal(
+    await heartbeatPage.getByTestId("availability-alert").count(),
+    0,
+  );
+  await heartbeatContext.close();
+  console.log(
+    "PASS: no countdown or warning between normal heartbeats; confirmed gaps wait for the next update; recovery clears the warning",
+  );
 
   phase = "saved auto-open, default sound, and quiet reconnects";
   latest.clear();
@@ -1060,7 +1176,7 @@ try {
     await popupPage.goto(new URL("/?demo=1&region=de-de", base).href);
     await popupPage
       .getByTestId("stock-5080")
-      .getByText("Unconfirmed", { exact: true })
+      .getByText("Status unavailable", { exact: true })
       .waitFor();
     await popupPage
       .getByRole("button", { name: "Auto-open off", exact: true })
@@ -1117,7 +1233,7 @@ try {
     await blockedPage.goto(new URL("/?demo=1&region=de-de", base).href);
     await blockedPage
       .getByTestId("stock-5080")
-      .getByText("Unconfirmed", { exact: true })
+      .getByText("Status unavailable", { exact: true })
       .waitFor();
     await blockedPage
       .getByRole("button", { name: "Auto-open off", exact: true })

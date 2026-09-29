@@ -123,11 +123,15 @@ export function isStockCheckFresh(
 
 export const STOCK_FAILURE_GRACE_MS = 30_000;
 
-/** Display grace only: never makes a cached result eligible for an alert. */
+/**
+ * Judge a brief failure at report time, not on each browser tick: recovery with
+ * unchanged stock waits for the next heartbeat. The normal freshness deadline
+ * still applies. Display grace never makes cached stock eligible for an alert.
+ */
 export function isStockCheckInGrace(
   card: CardState | undefined,
   now: number,
-  staleAfterMs: number,
+  packet: Pick<Packet, "serverTime" | "staleAfterMs">,
 ): boolean {
   return (
     card !== undefined &&
@@ -136,8 +140,10 @@ export function isStockCheckInGrace(
     ) &&
     typeof card.available === "boolean" &&
     card.observedAt !== null &&
-    now - card.observedAt >= 0 &&
-    now - card.observedAt < Math.min(STOCK_FAILURE_GRACE_MS, staleAfterMs)
+    now >= packet.serverTime &&
+    packet.serverTime - card.observedAt >= 0 &&
+    packet.serverTime - card.observedAt < STOCK_FAILURE_GRACE_MS &&
+    now - card.observedAt < packet.staleAfterMs
   );
 }
 
@@ -146,7 +152,7 @@ export function unhealthyStockModels(packet: Packet, now: number): Model[] {
     const card = packet.cards.find((card) => card.model === model);
     return (
       !isStockCheckFresh(card, now, packet.staleAfterMs) &&
-      !isStockCheckInGrace(card, now, packet.staleAfterMs)
+      !isStockCheckInGrace(card, now, packet)
     );
   });
 }

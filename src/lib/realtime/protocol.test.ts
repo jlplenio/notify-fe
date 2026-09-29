@@ -208,7 +208,7 @@ void test("missing, stale, failed, future or unknown stock stays degraded even w
   }
 });
 
-void test("transient failures have a 30-second display grace without rewriting raw state", () => {
+void test("brief reported failures stay stable until the next heartbeat without rewriting raw state", () => {
   for (const status of [
     "blocked",
     "timeout",
@@ -224,18 +224,29 @@ void test("transient failures have a 30-second display grace without rewriting r
     const state = new MonitorState("de-de");
     state.accept(p, 0);
     assert.equal(state.health(19_999), "healthy", status);
-    assert.equal(state.health(20_000), "source_degraded", status);
+    assert.equal(state.health(20_000), "healthy", status);
+    assert.equal(state.health(29_999), "healthy", status);
     assert.equal(state.packet?.cards[0]?.status, status);
     assert.equal(state.packet?.cards[0]?.observedAt, card.observedAt);
     assert.equal(isStockCheckFresh(card, p.serverTime, p.staleAfterMs), false);
-    assert.equal(isStockCheckInGrace(card, p.serverTime, p.staleAfterMs), true);
-    assert.deepEqual(unhealthyStockModels(p, p.serverTime + 30_000), [
+    assert.equal(isStockCheckInGrace(card, p.serverTime, p), true);
+    assert.deepEqual(unhealthyStockModels(p, p.serverTime + 30_000), []);
+    const heartbeat = {
+      ...p,
+      type: "health" as const,
+      sequence: 2,
+      serverTime: p.serverTime + 30_000,
+      lastPublisherAt: p.serverTime + 30_000,
+    };
+    state.accept(heartbeat, 30_000);
+    assert.equal(state.health(30_000), "source_degraded", status);
+    assert.deepEqual(unhealthyStockModels(heartbeat, heartbeat.serverTime), [
       card.model,
     ]);
   }
 });
 
-void test("heartbeats cannot renew failure grace and recovery clears it", () => {
+void test("a report confirming a 30-second gap warns immediately and recovery clears it", () => {
   const state = new MonitorState("de-de");
   const p = packet();
   p.cards[0]!.status = "blocked";
@@ -249,9 +260,32 @@ void test("heartbeats cannot renew failure grace and recovery clears it", () => 
   };
   state.accept(heartbeat, 9000);
   assert.equal(state.health(9999), "healthy");
+  assert.equal(state.health(10_000), "healthy");
+  state.accept(
+    { ...heartbeat, sequence: 3, serverTime: p.serverTime + 10_000 },
+    10_000,
+  );
   assert.equal(state.health(10_000), "source_degraded");
-  state.accept(packet(3, "update"), 10_001);
+  state.accept(packet(4, "health"), 10_001);
   assert.equal(state.health(10_001), "healthy");
+});
+
+void test("recovery at the next heartbeat never flashes a warning for a 20-second-old result", () => {
+  const state = new MonitorState("de-de");
+  const p = packet();
+  p.cards[0]!.status = "blocked";
+  p.cards[0]!.observedAt = p.serverTime - 20_000;
+  state.accept(p, 0);
+  for (const elapsed of [0, 9999, 10_000, 20_000, 29_999])
+    assert.equal(state.health(elapsed), "healthy");
+  const recovered = packet(2, "health");
+  recovered.serverTime = recovered.lastPublisherAt = p.serverTime + 30_000;
+  recovered.cards.forEach((card) => {
+    card.observedAt = recovered.serverTime - 5000;
+  });
+  state.accept(recovered, 30_000);
+  assert.equal(state.health(30_000), "healthy");
+  assert.equal(state.packet?.cards[0]?.status, "healthy");
 });
 
 void test("grace is bounded by source freshness and cannot hide unknown, invalid or future results", () => {
@@ -259,7 +293,13 @@ void test("grace is bounded by source freshness and cannot hide unknown, invalid
   const card = p.cards[0]!;
   card.status = "timeout";
   card.observedAt = p.serverTime - 15_000;
-  assert.equal(isStockCheckInGrace(card, p.serverTime, 10_000), false);
+  assert.equal(
+    isStockCheckInGrace(card, p.serverTime, { ...p, staleAfterMs: 10_000 }),
+    false,
+  );
+  assert.equal(isStockCheckInGrace(card, p.serverTime + 44_999, p), true);
+  assert.equal(isStockCheckInGrace(card, p.serverTime + 45_000, p), false);
+  assert.equal(isStockCheckInGrace(card, p.serverTime - 1, p), false);
   for (const patch of [
     { status: "unknown" as const },
     { status: "invalid_response" as const },
@@ -268,10 +308,10 @@ void test("grace is bounded by source freshness and cannot hide unknown, invalid
     { observedAt: p.serverTime + 1 },
   ])
     assert.equal(
-      isStockCheckInGrace({ ...card, ...patch }, p.serverTime, 60_000),
+      isStockCheckInGrace({ ...card, ...patch }, p.serverTime, p),
       false,
     );
-  assert.equal(isStockCheckInGrace(undefined, p.serverTime, 60_000), false);
+  assert.equal(isStockCheckInGrace(undefined, p.serverTime, p), false);
 });
 
 void test("display grace never produces an alert from cached positive stock", () => {
