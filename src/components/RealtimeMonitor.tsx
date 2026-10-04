@@ -477,7 +477,7 @@ export default function RealtimeMonitor() {
               <h1>
                 Founders <em>Edition.</em>
               </h1>
-              <p>RTX 50 series stock alerts</p>
+              <p>Nvidia Store stock alerts only</p>
             </div>
             <ListenerSummary packet={packet} locale={preferences.locale} />
           </div>
@@ -742,12 +742,12 @@ export default function RealtimeMonitor() {
             href="https://www.webshare.io/?referral_code=w6nfvip4qp3g"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Proudly enabled by Webshare proxies"
+            aria-label="Proxy infrastructure sponsored by Webshare"
             data-testid="webshare-sponsor"
           >
             <span className={styles.sponsorKicker}>Proxy infrastructure</span>
             <span className={styles.sponsorStatement}>
-              <span>Proudly enabled by</span>
+              <span>Sponsored by</span>
               <Image
                 className={styles.sponsorLogoLight}
                 src="/webshare-logo.svg"
@@ -762,7 +762,6 @@ export default function RealtimeMonitor() {
                 height={33}
                 alt="Webshare"
               />
-              <span>proxies</span>
             </span>
             <ArrowUpRight size={15} aria-hidden="true" />
           </a>
@@ -781,8 +780,8 @@ export default function RealtimeMonitor() {
                 Got your card, or rooting for everyone still waiting?
               </h2>
               <p>
-                Every little tip helps cover $50+ a month and keeps the alerts
-                coming for everyone.
+                Every little tip supports ongoing development and maintenance,
+                helping keep Notify-FE free for everyone.
               </p>
             </div>
             <a

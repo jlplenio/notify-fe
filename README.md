@@ -108,7 +108,7 @@ text `pong`. See the [message schema](src/lib/realtime/protocol.ts) for all fiel
 ## Support
 
 Got your card, or rooting for everyone still waiting? [Say thanks](https://ko-fi.com/timesaved).
-Every little tip helps cover $50+ a month and keeps the alerts coming for everyone.
+Every little tip supports ongoing development and maintenance, helping keep Notify-FE free for everyone.
 If you found your card, tell us the model and country. We’d love to hear your good news.
 
 Thanks to [Cloudflare](https://github.com/cloudflare) for supporting the project.
