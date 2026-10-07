@@ -21,6 +21,7 @@ import { ModeToggle } from "./ThemeToggle";
 import { ListenerSummary } from "./ListenerSummary";
 import { MonitorHealthBar } from "./MonitorHealthBar";
 import { TelegramSettings } from "./TelegramSettings";
+import { ShareButton } from "./ShareButton";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { env } from "~/env";
 import { useMonitor, type MonitorView } from "~/hooks/useMonitor";
@@ -718,6 +719,7 @@ export default function RealtimeMonitor() {
                   />
                 </label>
               </div>
+              <ShareButton locale={preferences.locale} />
               <a
                 href={storeUrl(preferences.locale)}
                 target="_blank"

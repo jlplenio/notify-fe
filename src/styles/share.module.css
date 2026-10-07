@@ -1,0 +1,117 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 44px;
+  min-height: 36px;
+  color: var(--green);
+  white-space: nowrap;
+}
+.trigger:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.trigger[aria-disabled="true"] {
+  opacity: 0.6;
+}
+.trigger:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.panel {
+  --share-ink: #243026;
+  --share-secondary: #657060;
+  --share-surface: #fffefb;
+  --share-line: #dce1d5;
+  --share-hover: #edf4e6;
+  --share-accent: #365d2c;
+  width: min(300px, calc(100vw - 24px));
+  max-height: var(--radix-popover-content-available-height, 85vh);
+  overflow-y: auto;
+  padding: 12px 16px;
+  border: 1px solid var(--share-line);
+  border-radius: 12px;
+  background: var(--share-surface);
+  color: var(--share-ink);
+  font:
+    13px/1.5 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+:global(.dark) .panel {
+  --share-ink: #eff2e7;
+  --share-secondary: #adb7a5;
+  --share-surface: #1b2219;
+  --share-line: #333e2d;
+  --share-hover: #25331f;
+  --share-accent: #c6e69f;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.heading h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.heading button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-right: -10px;
+}
+.actions {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 12px;
+}
+.actions a,
+.actions button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-align: left;
+}
+.actions a:hover,
+.actions button:hover {
+  background: var(--share-hover);
+}
+.label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--share-secondary);
+  font-size: 12px;
+}
+.link {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--share-line);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+}
+.status {
+  min-height: 18px;
+  margin-top: 6px;
+  color: var(--share-secondary);
+  font-size: 12px;
+}
+.panel :is(a, button, input):focus-visible {
+  outline: 2px solid var(--share-accent);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .trigger {
+    min-height: 44px;
+  }
+}
