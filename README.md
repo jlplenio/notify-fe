@@ -16,6 +16,12 @@ Your preferences are saved on your device. The watchlist shows reported stock,
 last sightings and whether stock checks are working. “Last seen in stock” is
 historical; check the store for current availability. Alerts do not make purchases.
 
+**New NVIDIA releases** groups newly discovered listings for your country in one
+card. Its switch starts on and controls both discovery and availability alerts.
+Products remain visible with the switch off. Availability checks for these listings
+can take longer than the three regular cards; queued or delayed checks are shown
+explicitly. If the feed is not enabled yet, the card says so.
+
 ### Sponsor
 
 A huge thank-you to the awesome team at **Webshare** for sponsoring our proxies.
@@ -104,6 +110,24 @@ Deduplicate by `publicationId + locale + model`, including snapshot identities,
 and retain recent identities across reconnects. Reconnect with backoff; missed
 alerts are not replayed. The feed is read-only; optional text `ping` receives
 text `pong`. See the [message schema](src/lib/realtime/protocol.ts) for all fields.
+
+Clients can request the optional new-product group with `discoveries=1`. It is
+separate from the fixed `models` subscription. `discoveries.products` contains at
+most five listings; `discoveryAlerts` contains explicit `discovered` or `available`
+events on updates. Snapshots and reconnects establish a quiet revision baseline;
+deduplicate newer validated events by locale, product ID, kind and revision.
+Keep receipts even with notifications off or after a listing disappears. A health
+packet can expose a revision before its event is ready, so observing a revision
+alone must not consume that event during the same connection. Older feeds may
+omit both fields.
+
+Each discovered product may include `lastAvailableAt`: the last confirmed
+in-stock time for that product and country. It remains available after stock
+becomes false; null or an omitted field means no historical timestamp was
+supplied. This history field does not indicate current availability or an alert.
+
+Run `npm test` for offline protocol, preferences and notification regression tests,
+including new-product replay and validation checks.
 
 ## Support
 

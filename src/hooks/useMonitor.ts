@@ -10,6 +10,7 @@ import {
   subscriptionUrl,
   type MonitorHealth,
   type Packet,
+  type DiscoveryAlert,
 } from "../lib/realtime/protocol.ts";
 
 export type Connection =
@@ -40,6 +41,7 @@ export function useMonitor({
   allowSynthetic,
   demo,
   onAlerts,
+  onDiscoveryAlerts,
 }: {
   locale: Locale;
   ready: boolean;
@@ -47,6 +49,7 @@ export function useMonitor({
   allowSynthetic: boolean;
   demo: boolean;
   onAlerts: (packet: Packet, models: Model[]) => void;
+  onDiscoveryAlerts: (packet: Packet, alerts: DiscoveryAlert[]) => void;
 }) {
   const [view, setView] = useState<MonitorView>(emptyView);
   const [demoDropAt, setDemoDropAt] = useState<number | null>(null);
@@ -58,6 +61,8 @@ export function useMonitor({
   );
   const callback = useRef(onAlerts);
   callback.current = onAlerts;
+  const discoveryCallback = useRef(onDiscoveryAlerts);
+  discoveryCallback.current = onDiscoveryAlerts;
   const reconnectRef = useRef<(() => void) | null>(null);
   const demoRef = useRef<((model: Model) => void) | null>(null);
 
@@ -83,6 +88,8 @@ export function useMonitor({
       if (!result) return;
       render();
       if (result.alerts.length) callback.current(result.packet, result.alerts);
+      if (result.discoveryAlerts.length)
+        discoveryCallback.current(result.packet, result.discoveryAlerts);
     };
     render();
 
@@ -235,6 +242,8 @@ export function useMonitor({
           render();
           if (result.alerts.length)
             callback.current(result.packet, result.alerts);
+          if (result.discoveryAlerts.length)
+            discoveryCallback.current(result.packet, result.discoveryAlerts);
         } catch {
           issue = "Monitoring data could not be verified. Reconnecting safely.";
           closeCurrent();

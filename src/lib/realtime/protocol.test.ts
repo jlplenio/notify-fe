@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { demoPacket } from "./demo.ts";
-import { LOCALES, storeUrl, legacyRedirectTarget } from "./catalog.ts";
+import {
+  LOCALES,
+  MODELS,
+  storeUrl,
+  legacyRedirectTarget,
+  nvidiaStoreUrl,
+  safeShopUrl,
+} from "./catalog.ts";
 import {
   MonitorState,
   isStockCheckFresh,
@@ -484,8 +491,10 @@ void test("store links reject executable/credential-bearing URLs and unknown tim
     "data:text/html,test",
     "https://user:password@shop.example/",
     "http://shop.example/",
-  ])
+  ]) {
     assert.equal(storeUrl("de-de", url), fallback);
+    assert.equal(safeShopUrl(url), null);
+  }
   assert.equal(
     new URL(
       storeUrl("de-de", "https://store.nvidia.com/item"),
@@ -496,6 +505,23 @@ void test("store links reject executable/credential-bearing URLs and unknown tim
   assert.equal(relativeTime(START - 2 * 86400_000, START), "2 days ago");
 });
 
+void test("NVIDIA catalog links select the current country and known GPU without guessing a future model", () => {
+  for (const locale of LOCALES) {
+    for (const model of MODELS) {
+      const url = new URL(nvidiaStoreUrl(locale, model));
+      assert.equal(url.origin, "https://marketplace.nvidia.com");
+      assert.equal(url.pathname, `/${locale}/consumer/graphics-cards/`);
+      assert.equal(url.searchParams.get("locale"), locale);
+      assert.equal(url.searchParams.get("manufacturer"), "NVIDIA");
+      assert.equal(url.searchParams.get("gpu"), `RTX ${model}`);
+    }
+    assert.equal(
+      new URL(nvidiaStoreUrl(locale)).searchParams.has("gpu"),
+      false,
+    );
+  }
+});
+
 void test("every region preserves arbitrary retailer links and encoded parameters through the established redirect", () => {
   for (const locale of LOCALES) {
     for (const retailer of [
@@ -504,6 +530,7 @@ void test("every region preserves arbitrary retailer links and encoded parameter
       `https://checkout.example/order/${locale}/a%2Fb%2Bc?signature=offline%252Ftest`,
     ]) {
       const destination = new URL(storeUrl(locale, retailer));
+      assert.equal(safeShopUrl(retailer), retailer);
       assert.equal(destination.origin, "https://nvidia.com.plen.io");
       assert.equal(destination.searchParams.get("url"), retailer);
     }

@@ -109,6 +109,43 @@ export function previewPacket(
   scenario: PreviewScenario = "5080-delayed",
 ): Packet {
   const packet = demoPacket(locale, now, sequence, available);
+  packet.discoveries = {
+    revision: 3,
+    checkedAt: now,
+    status: "healthy",
+    overflow: false,
+    products: [
+      {
+        id: "a".repeat(64),
+        name: "NVIDIA RTX sample product A",
+        memory: "24 GB",
+        sku: "PREVIEW_A",
+        firstSeenAt: now,
+        discoveredRevision: 1,
+        availableRevision: 3,
+        available: true,
+        productUrl: null,
+        observedAt: now,
+        lastAvailableAt: now,
+        status: "healthy",
+      },
+      {
+        id: "b".repeat(64),
+        name: "NVIDIA RTX sample product B",
+        memory: "24 GB",
+        sku: "PREVIEW_B",
+        firstSeenAt: now,
+        discoveredRevision: 2,
+        availableRevision: 0,
+        available: false,
+        productUrl: null,
+        observedAt: now,
+        lastAvailableAt: null,
+        status: "healthy",
+      },
+    ],
+  };
+  packet.discoveryAlerts = [];
   packet.monitorHealthPercent =
     scenario === "healthy" ? 100 : scenario === "all-delayed" ? 0 : 72;
   const delayed = packet.cards.filter(

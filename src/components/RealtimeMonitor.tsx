@@ -22,6 +22,8 @@ import { ListenerSummary } from "./ListenerSummary";
 import { MonitorHealthBar } from "./MonitorHealthBar";
 import { TelegramSettings } from "./TelegramSettings";
 import { ShareButton } from "./ShareButton";
+import { NewProductsCard } from "./NewProductsCard";
+import { ProductStoreLinks } from "./ProductStoreLinks";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { env } from "~/env";
 import { useMonitor, type MonitorView } from "~/hooks/useMonitor";
@@ -48,8 +50,13 @@ import {
   relativeTime,
   type CardState,
   type Packet,
+  type DiscoveryAlert,
 } from "~/lib/realtime/protocol";
-import { autoOpenStores, previewStoreUrl } from "~/lib/realtime/actions";
+import {
+  autoOpenStores,
+  autoOpenDiscoveryStores,
+  previewStoreUrl,
+} from "~/lib/realtime/actions";
 import { PREVIEW_SCENARIOS } from "~/lib/realtime/demo";
 import {
   cardCatalogNotice,
@@ -245,21 +252,26 @@ function StockCard({
             Waiting for the next update
           </span>
         )}
-        {available && monitor.packet && (
-          <a
-            className={styles.shopLink}
-            href={
-              demo
-                ? previewStoreUrl(monitor.packet.locale, model)
-                : storeUrl(monitor.packet.locale, card?.productUrl)
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {demo ? "Demo shop" : `Shop RTX ${model}`}{" "}
-            <ArrowUpRight size={13} />
-          </a>
-        )}
+        {available &&
+          monitor.packet &&
+          (demo ? (
+            <a
+              className={styles.shopLink}
+              href={previewStoreUrl(monitor.packet.locale, model)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Demo shop <ArrowUpRight size={13} />
+            </a>
+          ) : (
+            <ProductStoreLinks
+              locale={monitor.packet.locale}
+              name={`RTX ${model}`}
+              model={model}
+              productUrl={card?.productUrl}
+              synthetic={monitor.packet.synthetic}
+            />
+          ))}
       </div>
       <dl className={styles.lastSeen}>
         <dt className={styles.rowFieldLabel}>Last in stock</dt>
@@ -312,6 +324,7 @@ export default function RealtimeMonitor() {
   const [storageAvailable, setStorageAvailable] = useState(true);
   const [lastAlert, setLastAlert] = useState<{
     models: Model[];
+    heading?: string;
     at: number;
     synthetic: boolean;
     demo: boolean;
@@ -400,6 +413,38 @@ export default function RealtimeMonitor() {
     endpoint: env.NEXT_PUBLIC_WEBSOCKET_URL,
     allowSynthetic: env.NEXT_PUBLIC_ALLOW_SYNTHETIC === "true",
     onAlerts,
+    onDiscoveryAlerts: (packet: Packet, alerts: DiscoveryAlert[]) => {
+      if (!preferences.watchNewProducts) return;
+      const available = alerts.filter((event) => event.kind === "available");
+      const selected = available.length ? available : alerts;
+      const products = selected.flatMap((event) => {
+        const product = packet.discoveries?.products.find(
+          (product) => product.id === event.id,
+        );
+        return product ? [product] : [];
+      });
+      if (!products.length) return;
+      const names = products.map((product) => product.name).join(" / ");
+      setLastAlert({
+        models: [],
+        heading: available.length
+          ? `${names} spotted in stock`
+          : `New NVIDIA listing${products.length === 1 ? "" : "s"} · ${names}`,
+        at: packet.serverTime,
+        synthetic: packet.synthetic,
+        demo,
+        url: storeUrl(packet.locale, products[0]?.productUrl),
+        autoOpenAttempted:
+          autoOpenDiscoveryStores(
+            packet,
+            alerts,
+            preferences.autoOpen,
+            (url, target, features) => window.open(url, target, features),
+          ) > 0,
+      });
+      if (preferences.soundEnabled) void sound.play();
+      telegram.notifyDiscoveries(packet, alerts, demo);
+    },
   });
   const packet = monitor.packet;
   const simulated = demo || packet?.synthetic === true;
@@ -449,7 +494,7 @@ export default function RealtimeMonitor() {
       <Head>
         <title>
           {lastAlert
-            ? `${lastAlert.synthetic ? "TEST · " : ""}RTX ${lastAlert.models.join(" / ")} spotted · Notify-FE`
+            ? `${lastAlert.synthetic ? "TEST · " : ""}${lastAlert.heading ?? `RTX ${lastAlert.models.join(" / ")} spotted`} · Notify-FE`
             : "Notify-FE · Founders Edition stock alerts"}
         </title>
       </Head>
@@ -671,6 +716,14 @@ export default function RealtimeMonitor() {
                   }
                 />
               ))}
+              <NewProductsCard
+                monitor={monitor}
+                selected={preferences.watchNewProducts}
+                ready={ready}
+                onToggle={() =>
+                  update({ watchNewProducts: !preferences.watchNewProducts })
+                }
+              />
             </div>
             <div className={styles.watchlistFooter}>
               <div className={styles.soundHint}>
@@ -734,7 +787,7 @@ export default function RealtimeMonitor() {
               Settings can’t be saved in this browser. They’ll reset next visit.
             </p>
           )}
-          {preferences.models.length === 0 && (
+          {preferences.models.length === 0 && !preferences.watchNewProducts && (
             <p className={styles.storageWarning} role="status">
               Notifications paused. Select a card to receive alerts.
             </p>
@@ -811,6 +864,12 @@ export default function RealtimeMonitor() {
                 Listener totals count connections, not unique people.
               </p>
               <p>
+                New NVIDIA releases share one alert switch for new listings and
+                availability in your country. Their availability checks use
+                spare capacity and can take longer. Listings disappear when a
+                successful catalog check no longer includes them.
+              </p>
+              <p>
                 Last in stock is the latest confirmed sighting, not a guarantee
                 of availability. Times use your device’s time zone. First
                 snapshots and reconnects are quiet; only new updates for
@@ -853,8 +912,9 @@ export default function RealtimeMonitor() {
           </span>
           <div>
             <strong>
-              {lastAlert.synthetic ? "Test alert · " : ""}RTX{" "}
-              {lastAlert.models.join(" / ")} spotted in stock
+              {lastAlert.synthetic ? "Test alert · " : ""}
+              {lastAlert.heading ??
+                `RTX ${lastAlert.models.join(" / ")} spotted in stock`}
             </strong>
             <p>
               {country.name} · {relativeTime(lastAlert.at, now).toLowerCase()} ·

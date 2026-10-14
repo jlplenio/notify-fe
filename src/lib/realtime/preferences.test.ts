@@ -7,6 +7,7 @@ void test("first visit enables all three 50-series cards and uses a supported lo
   assert.deepEqual(readPreferences(null).models, [...MODELS]);
   assert.equal(readPreferences(null).soundEnabled, true);
   assert.equal(readPreferences(null).autoOpen, false);
+  assert.equal(readPreferences(null).watchNewProducts, true);
   assert.equal(readPreferences(null, undefined, "de-DE").locale, "de-de");
   assert.equal(readPreferences(null, "en-in", "xx-YY").locale, "en-gb");
 });

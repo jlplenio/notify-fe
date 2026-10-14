@@ -138,6 +138,7 @@ async function setup(
         new URL(socket.url()).searchParams.get("monitorHealth"),
         "1",
       );
+      assert.equal(new URL(socket.url()).searchParams.get("discoveries"), "1");
       sockets.set(socket, locale);
       totalConnections++;
       socket.onClose(() => sockets.delete(socket));
@@ -200,7 +201,205 @@ try {
     .getByTestId("monitor-health")
     .getByText("Stock checks active", { exact: true })
     .waitFor();
-  assert.equal(await page.getByRole("switch").count(), 3);
+  assert.equal(await page.getByRole("switch").count(), 4);
+  phase = "bounded fourth group and saved discovery alerts";
+  const discoveryToggle = page.locator("#notify-new-products");
+  assert.equal(await discoveryToggle.getAttribute("aria-checked"), "true");
+  await discoveryToggle.click();
+  assert.equal(await discoveryToggle.getAttribute("aria-checked"), "false");
+  await page
+    .getByText("Monitoring not available yet", { exact: true })
+    .waitFor();
+  const makeProduct = (letter, revision) => ({
+    id: letter.repeat(64),
+    name: `NVIDIA future product ${letter.toUpperCase()}`,
+    memory: "24 GB",
+    sku: `FUTURE${letter}`,
+    firstSeenAt: Date.now(),
+    discoveredRevision: revision,
+    availableRevision: 0,
+    available: null,
+    productUrl: null,
+    observedAt: null,
+    status: "queued",
+  });
+  const products = [
+    makeProduct("a", 1),
+    makeProduct("b", 2),
+    makeProduct("c", 3),
+  ];
+  const discoveryPacket = (
+    revision,
+    items,
+    events = [],
+    status = "healthy",
+  ) => {
+    const now = Date.now();
+    return {
+      ...demoPacket("de-de", now, ++sequence),
+      synthetic: false,
+      type: "update",
+      alerts: [],
+      discoveries: {
+        revision,
+        checkedAt: now,
+        status,
+        overflow: false,
+        products: items,
+      },
+      discoveryAlerts: events,
+    };
+  };
+  deliver(discoveryPacket(0, []));
+  await page.getByText("Watching for new products", { exact: true }).waitFor();
+  deliver(
+    discoveryPacket(
+      3,
+      products,
+      products.map((item) => ({
+        id: item.id,
+        kind: "discovered",
+        revision: item.discoveredRevision,
+      })),
+    ),
+  );
+  await waitFor(
+    async () => (await page.getByTestId("new-product").count()) === 3,
+    "Three discoveries should remain inside one group",
+  );
+  assert.equal(await page.getByRole("switch").count(), 4);
+  assert.equal(await page.getByTestId("availability-alert").count(), 0);
+  assert.equal(await page.evaluate(() => window.__testAudioPlays), 0);
+  await discoveryToggle.click();
+  assert.equal(await discoveryToggle.getAttribute("aria-checked"), "true");
+  const firstAvailable = {
+    ...products[0],
+    available: true,
+    status: "healthy",
+    observedAt: Date.now(),
+    availableRevision: 4,
+  };
+  deliver(
+    discoveryPacket(
+      4,
+      [firstAvailable, ...products.slice(1)],
+      [{ id: firstAvailable.id, kind: "available", revision: 4 }],
+    ),
+  );
+  await page
+    .getByTestId("availability-alert")
+    .getByText(/future product A spotted in stock/)
+    .waitFor();
+  const soundsAfterStock = await page.evaluate(() => window.__testAudioPlays);
+  assert.equal(soundsAfterStock, 1);
+  await page
+    .getByRole("button", { name: "Dismiss availability alert" })
+    .click();
+  deliver(discoveryPacket(5, [firstAvailable, products[1]]));
+  await waitFor(
+    async () => (await page.getByTestId("new-product").count()) === 2,
+    "Removed discovery should disappear",
+  );
+  deliver(discoveryPacket(5, [firstAvailable, products[1]], [], "stale"));
+  await page
+    .getByTestId("new-products-status")
+    .getByText("Catalog check delayed", { exact: true })
+    .waitFor();
+  assert.equal(await page.getByTestId("new-product").count(), 2);
+  deliver(discoveryPacket(6, [firstAvailable, ...products.slice(1)]));
+  await waitFor(
+    async () => (await page.getByTestId("new-product").count()) === 3,
+    "Returning product should reappear quietly",
+  );
+  assert.equal(await page.getByTestId("availability-alert").count(), 0);
+  assert.equal(
+    await page.evaluate(() => window.__testAudioPlays),
+    soundsAfterStock,
+  );
+  await page
+    .getByRole("button", { name: "Auto-open off", exact: true })
+    .click();
+  const newcomer = makeProduct("d", 7);
+  deliver(
+    discoveryPacket(
+      7,
+      [...products, newcomer],
+      [{ id: newcomer.id, kind: "discovered", revision: 7 }],
+    ),
+  );
+  await page
+    .getByTestId("availability-alert")
+    .getByText(/New NVIDIA listing/)
+    .waitFor();
+  assert.deepEqual(
+    await page.evaluate(() => window.__testOpened),
+    [],
+    "Discovery must not auto-open a store",
+  );
+  await page
+    .getByRole("button", { name: "Dismiss availability alert" })
+    .click();
+  const newcomerAvailable = {
+    ...newcomer,
+    available: true,
+    status: "healthy",
+    observedAt: Date.now(),
+    availableRevision: 8,
+  };
+  const stockEvent = { id: newcomer.id, kind: "available", revision: 8 };
+  deliver(discoveryPacket(8, [...products, newcomerAvailable], [stockEvent]));
+  await page
+    .getByTestId("availability-alert")
+    .getByText(/future product D spotted in stock/)
+    .waitFor();
+  assert.equal((await page.evaluate(() => window.__testOpened)).length, 1);
+  await page
+    .getByRole("button", { name: "Dismiss availability alert" })
+    .click();
+  deliver(discoveryPacket(8, [...products, newcomerAvailable], [stockEvent]));
+  await page.waitForTimeout(100);
+  assert.equal(await page.getByTestId("availability-alert").count(), 0);
+  await discoveryToggle.click();
+  const last = makeProduct("e", 9);
+  deliver(
+    discoveryPacket(
+      9,
+      [...products, newcomerAvailable, last],
+      [{ id: last.id, kind: "discovered", revision: 9 }],
+    ),
+  );
+  await waitFor(
+    async () => (await page.getByTestId("new-product").count()) === 5,
+    "Off toggle should retain visibility",
+  );
+  assert.equal(await page.getByTestId("availability-alert").count(), 0);
+  await page.screenshot({
+    path: resolve(screenshots, "new-products-desktop-light.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 360, height: 900 });
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await page.screenshot({
+    path: resolve(screenshots, "new-products-mobile-light.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1365, height: 1000 });
+  await page.getByRole("button", { name: "Auto-open on", exact: true }).click();
+  await page.evaluate(() => {
+    window.__testAudioPlays = 0;
+    window.__testAudioRates = [];
+    window.__testOpened = [];
+    window.__testOpenActivation = [];
+  });
+  publish("de-de", null, "health");
+  console.log(
+    "PASS: one bounded discovery group; off means no alerts, first positive alerts, removals/reappearances stay quiet, discovery never auto-opens, mobile has no overflow",
+  );
   phase = "optional monitor health percentage";
   const capacity = page.getByTestId("monitor-health-value");
   assert.equal(await capacity.innerText(), "100%");
@@ -272,7 +471,10 @@ try {
       exact: true,
     })
     .waitFor();
-  assert.match(await support.innerText(), /\$50\+ a month/);
+  assert.match(
+    await support.innerText(),
+    /Every little tip supports ongoing development/,
+  );
   const supportLink = support.getByRole("link", {
     name: "Say thanks on Ko-fi",
   });
@@ -604,7 +806,7 @@ try {
     .getByText("Last seen in stock", { exact: true })
     .waitFor();
   assert.equal(
-    await page.getByRole("link", { name: "Shop RTX 5090" }).count(),
+    await page.getByRole("link", { name: "View RTX 5090 on NVIDIA" }).count(),
     0,
   );
   assert.equal(await page.getByTestId("availability-alert").count(), 0);
@@ -672,7 +874,7 @@ try {
     .getByText("In stock", { exact: true })
     .waitFor();
   assert.equal(
-    await page.getByRole("link", { name: "Shop RTX 5090" }).count(),
+    await page.getByRole("link", { name: "View RTX 5090 on NVIDIA" }).count(),
     1,
   );
   assert.equal(await page.getByTestId("availability-alert").count(), 0);

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { COUNTRIES, storeUrl, type Model } from "./catalog.ts";
-import type { Packet } from "./protocol.ts";
+import {
+  freshDiscoveryAlerts,
+  type DiscoveryAlert,
+  type Packet,
+} from "./protocol.ts";
 import {
   TELEGRAM_RECEIPTS_KEY,
   validateTelegram,
@@ -140,9 +144,20 @@ export function telegramAlertModels(
 export function telegramAlertText(
   packet: Packet,
   models: readonly Model[],
+  discoveries: readonly DiscoveryAlert[] = [],
 ): string {
   const page = `https://notify-fe.plen.io/?region=${packet.locale}`;
-  let text = `Notify-FE: RTX ${models.join(" / ")} spotted in stock in ${COUNTRIES[packet.locale].name}.\n\n${page}`;
+  let text = models.length
+    ? `Notify-FE: RTX ${models.join(" / ")} spotted in stock in ${COUNTRIES[packet.locale].name}.\n\n${page}`
+    : `Notify-FE: New NVIDIA releases in ${COUNTRIES[packet.locale].name}.\n\n${page}`;
+  for (const event of discoveries) {
+    const product = packet.discoveries?.products.find(
+      (item) => item.id === event.id,
+    );
+    if (!product) continue;
+    const line = `\n\n${product.name}${product.memory ? ` · ${product.memory}` : ""}: ${event.kind === "available" ? "spotted in stock" : "new listing detected"}.`;
+    if (text.length + line.length <= 4096) text += line;
+  }
   for (const model of models) {
     const link = `\n\nRTX ${model}: ${storeUrl(packet.locale, packet.cards.find((c) => c.model === model)?.productUrl)}`;
     // Never truncate a signed checkout URL; the website link remains usable.
@@ -189,11 +204,26 @@ export class TelegramNotifier {
     packet: Packet | null,
     selected: readonly Model[],
     signal: AbortSignal,
+    selectedDiscoveries: readonly DiscoveryAlert[] = [],
   ): Promise<TelegramResult> {
     const checked = validateTelegram(settings);
     if (!checked.settings) return { kind: "error", message: checked.error };
     const models = packet ? telegramAlertModels(packet, selected) : [];
-    if (packet && (!settings.enabled || !models.length))
+    const discoveries =
+      packet && !packet.synthetic
+        ? freshDiscoveryAlerts(packet).filter((event) =>
+            selectedDiscoveries.some(
+              (selected) =>
+                selected.id === event.id &&
+                selected.kind === event.kind &&
+                selected.revision === event.revision,
+            ),
+          )
+        : [];
+    if (
+      packet &&
+      (!settings.enabled || (!models.length && !discoveries.length))
+    )
       return { kind: "skipped", message: "No new selected live drop." };
     const now = this.options.now ?? Date.now;
     const started = now();
@@ -205,6 +235,15 @@ export class TelegramNotifier {
               15000 -
               (packet.serverTime -
                 packet.cards.find((c) => c.model === model)!.observedAt!),
+          ),
+          ...discoveries.map((event) =>
+            event.kind === "discovered"
+              ? 15000
+              : 15000 -
+                (packet.serverTime -
+                  packet.discoveries!.products.find(
+                    (item) => item.id === event.id,
+                  )!.observedAt!),
           ),
         )
       : started + 15000;
@@ -242,7 +281,13 @@ export class TelegramNotifier {
       const fresh = models.filter(
         (model) => !this.receipts.some((r) => r.id === id(model)),
       );
-      if (packet && !fresh.length)
+      const discoveryId = (event: DiscoveryAlert) =>
+        `${destination}:${packet?.locale}:discovery:${event.id}:${event.kind}:${event.revision}`;
+      const freshDiscoveries = discoveries.filter(
+        (event) =>
+          !this.receipts.some((receipt) => receipt.id === discoveryId(event)),
+      );
+      if (packet && !fresh.length && !freshDiscoveries.length)
         return {
           kind: "skipped",
           message: "This drop was already handled in this browser.",
@@ -258,6 +303,10 @@ export class TelegramNotifier {
       if (packet) {
         this.receipts.push(
           ...fresh.map((model) => ({ id: id(model), at: now() })),
+          ...freshDiscoveries.map((event) => ({
+            id: discoveryId(event),
+            at: now(),
+          })),
         );
         this.receipts = this.receipts.slice(-256);
         try {
@@ -270,7 +319,7 @@ export class TelegramNotifier {
         }
       }
       const text = packet
-        ? telegramAlertText(packet, fresh)
+        ? telegramAlertText(packet, fresh, freshDiscoveries)
         : "Notify-FE test: Telegram notifications are working. Keep the website open and your device awake to receive new drop alerts.";
       let result = await sendTelegram(
         settings,

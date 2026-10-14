@@ -1,5 +1,45 @@
 import { storeUrl, type Locale, type Model } from "./catalog.ts";
-import type { Packet } from "./protocol.ts";
+import {
+  freshDiscoveryAlerts,
+  type DiscoveryAlert,
+  type Packet,
+} from "./protocol.ts";
+
+/** New listings never open tabs; only an opted-in, confirmed live availability. */
+export function autoOpenDiscoveryStores(
+  packet: Packet,
+  alerts: readonly DiscoveryAlert[],
+  enabled: boolean,
+  open: (url: string, target: string, features: string) => unknown,
+): number {
+  if (!enabled || packet.synthetic) return 0;
+  const fresh = freshDiscoveryAlerts(packet);
+  const urls = new Set<string>();
+  for (const event of alerts) {
+    if (
+      event.kind !== "available" ||
+      !fresh.some(
+        (item) =>
+          item.id === event.id &&
+          item.kind === event.kind &&
+          item.revision === event.revision,
+      )
+    )
+      continue;
+    const product = packet.discoveries?.products.find(
+      (item) => item.id === event.id,
+    );
+    urls.add(storeUrl(packet.locale, product?.productUrl));
+  }
+  for (const url of urls) {
+    try {
+      open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      /* The manual store link remains available. */
+    }
+  }
+  return urls.size;
+}
 
 /** A fixed same-origin destination; never derived from a reported product URL. */
 export function previewStoreUrl(locale: Locale, model: Model): string {

@@ -17,6 +17,7 @@ const schema = z.object({
     .refine((v) => new Set(v).size === v.length),
   soundEnabled: z.boolean(),
   autoOpen: z.boolean().optional().default(false),
+  watchNewProducts: z.boolean().optional().default(true),
   volume: z.number().finite().min(0).max(1),
 });
 export type Preferences = z.infer<typeof schema>;
@@ -45,6 +46,7 @@ export function readPreferences(
         models: [...MODELS],
         soundEnabled: true,
         autoOpen: false,
+        watchNewProducts: true,
         volume: 0.5,
       };
 }

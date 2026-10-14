@@ -32,6 +32,70 @@ export const cardSchema = z.object({
   status: source,
 });
 export type CardState = z.infer<typeof cardSchema>;
+const discoveryId = z.string().regex(/^[a-f0-9]{64}$/);
+const safeProductUrl = z
+  .string()
+  .max(2048)
+  .url()
+  .refine((value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" && !url.username && !url.password;
+    } catch {
+      return false;
+    }
+  })
+  .nullable();
+export const discoveryProductSchema = z
+  .object({
+    id: discoveryId,
+    name: z.string().min(1).max(160),
+    memory: z.string().min(1).max(32).nullable(),
+    sku: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
+    firstSeenAt: timestamp.unwrap(),
+    discoveredRevision: counter,
+    availableRevision: counter,
+    available: z.boolean().nullable(),
+    productUrl: safeProductUrl,
+    observedAt: timestamp,
+    lastAvailableAt: timestamp.optional(),
+    status: z.union([source, z.literal("queued")]),
+  })
+  .refine(
+    (product) =>
+      product.status !== "healthy" ||
+      (product.observedAt !== null && product.available !== null),
+    "Missing stock observation",
+  );
+export const discoveriesSchema = z
+  .object({
+    revision: counter,
+    checkedAt: timestamp,
+    status: source,
+    overflow: z.boolean(),
+    products: z.array(discoveryProductSchema).max(5),
+  })
+  .superRefine((group, ctx) => {
+    if (
+      new Set(group.products.map((product) => product.id)).size !==
+        group.products.length ||
+      group.products.some(
+        (product) =>
+          product.discoveredRevision > group.revision ||
+          product.availableRevision > group.revision,
+      ) ||
+      (group.status === "healthy" && group.checkedAt === null)
+    )
+      ctx.addIssue({ code: "custom", message: "Invalid new-product group" });
+  });
+const discoveryAlertSchema = z.object({
+  id: discoveryId,
+  kind: z.enum(["discovered", "available"]),
+  revision: counter.positive(),
+});
+export type DiscoveryProduct = z.infer<typeof discoveryProductSchema>;
+export type DiscoveryGroup = z.infer<typeof discoveriesSchema>;
+export type DiscoveryAlert = z.infer<typeof discoveryAlertSchema>;
 export const packetSchema = z
   .object({
     version: z.literal(1),
@@ -88,6 +152,13 @@ export const packetSchema = z
     }),
     cards: z.array(cardSchema).max(3),
     alerts: z.array(z.enum(MODELS)).max(3),
+    // This optional extension must never interrupt the three fixed cards.
+    discoveries: discoveriesSchema.optional().catch(undefined),
+    discoveryAlerts: z
+      .array(discoveryAlertSchema)
+      .max(10)
+      .optional()
+      .catch(undefined),
   })
   .superRefine((packet, ctx) => {
     if (
@@ -105,6 +176,49 @@ export const packetSchema = z
   });
 export type Packet = z.infer<typeof packetSchema>;
 export type MonitorHealth = Packet["status"] | "waiting" | "transport_silent";
+
+/** Only explicit, fresh update events can notify; catalog presence is not stock. */
+export function freshDiscoveryAlerts(packet: Packet): DiscoveryAlert[] {
+  const group = packet.discoveries;
+  if (
+    packet.type !== "update" ||
+    packet.status === "offline" ||
+    !packet.publicationId ||
+    packet.lastPublisherAt === null ||
+    packet.serverTime - packet.lastPublisherAt < 0 ||
+    packet.serverTime - packet.lastPublisherAt >= packet.offlineAfterMs ||
+    group?.status !== "healthy" ||
+    group.checkedAt === null ||
+    packet.serverTime - group.checkedAt < 0 ||
+    packet.serverTime - group.checkedAt >= packet.catalogStaleAfterMs
+  )
+    return [];
+  const seen = new Set<string>();
+  return (packet.discoveryAlerts ?? []).filter((event) => {
+    const product = group.products.find((item) => item.id === event.id);
+    const key = `${event.id}:${event.kind}:${event.revision}`;
+    if (
+      !product ||
+      seen.has(key) ||
+      event.revision > group.revision ||
+      product.firstSeenAt > packet.serverTime ||
+      event.revision !==
+        (event.kind === "discovered"
+          ? product.discoveredRevision
+          : product.availableRevision)
+    )
+      return false;
+    seen.add(key);
+    return (
+      event.kind === "discovered" ||
+      (product.available === true &&
+        product.status === "healthy" &&
+        product.observedAt !== null &&
+        packet.serverTime - product.observedAt >= 0 &&
+        packet.serverTime - product.observedAt <= 15_000)
+    );
+  });
+}
 
 /** A current usable stock result, independent of catalog completeness. */
 export function isStockCheckFresh(
@@ -180,6 +294,7 @@ export function subscriptionUrl(endpoint: string, locale: Locale): string {
   url.searchParams.set("models", MODELS.join(","));
   url.searchParams.set("client", "website");
   url.searchParams.set("monitorHealth", "1");
+  url.searchParams.set("discoveries", "1");
   return url.toString();
 }
 
@@ -190,6 +305,8 @@ export class MonitorState {
   readonly seen = new Set<string>();
   readonly locale: Locale;
   readonly allowSynthetic: boolean;
+  private discoveryQuietRevision = 0;
+  private discoveryObservedRevision = 0;
 
   constructor(locale: Locale, allowSynthetic = false) {
     this.locale = locale;
@@ -197,6 +314,10 @@ export class MonitorState {
   }
 
   beginConnection() {
+    this.discoveryQuietRevision = Math.max(
+      this.discoveryQuietRevision,
+      this.discoveryObservedRevision,
+    );
     this.packet = null;
     this.receivedAt = 0;
   }
@@ -212,7 +333,11 @@ export class MonitorState {
   accept(
     input: unknown,
     monotonicNow: number,
-  ): { packet: Packet; alerts: Model[] } | null {
+  ): {
+    packet: Packet;
+    alerts: Model[];
+    discoveryAlerts: DiscoveryAlert[];
+  } | null {
     const parsed = packetSchema.safeParse(input);
     if (!parsed.success) throw new Error("Unsupported monitoring data");
     const next = parsed.data;
@@ -258,9 +383,32 @@ export class MonitorState {
         }
       }
     }
+    this.discoveryObservedRevision = Math.max(
+      this.discoveryObservedRevision,
+      next.discoveries?.revision ?? 0,
+    );
+    // Snapshots/reconnects are quiet baselines. A heartbeat can expose a newer
+    // revision before its event is deliverable, so it must not consume events.
+    if (next.type === "snapshot")
+      this.discoveryQuietRevision = Math.max(
+        this.discoveryQuietRevision,
+        this.discoveryObservedRevision,
+      );
+    const discoveryAlerts = freshDiscoveryAlerts(next).filter((event) => {
+      const eventId = `discovery:${next.synthetic}:${next.locale}:${event.id}:${event.kind}:${event.revision}`;
+      if (
+        event.revision <= this.discoveryQuietRevision ||
+        this.seen.has(eventId)
+      )
+        return false;
+      // Consume before the caller applies opt-in preferences. Re-enabling the
+      // switch cannot replay an event received while notifications were off.
+      this.remember(eventId);
+      return true;
+    });
     this.packet = next;
     this.receivedAt = monotonicNow;
-    return { packet: next, alerts };
+    return { packet: next, alerts, discoveryAlerts };
   }
 
   serverNow(monotonicNow: number) {

@@ -12,7 +12,7 @@ import {
   type TelegramSettings,
 } from "~/lib/realtime/telegram-settings";
 import type { Model } from "~/lib/realtime/catalog";
-import type { Packet } from "~/lib/realtime/protocol";
+import type { DiscoveryAlert, Packet } from "~/lib/realtime/protocol";
 
 export function useTelegram() {
   const [settings, setSettings] = useState({ ...EMPTY_TELEGRAM });
@@ -117,6 +117,7 @@ export function useTelegram() {
     input: TelegramSettings,
     packet: Packet | null,
     models: readonly Model[],
+    discoveries: readonly DiscoveryAlert[] = [],
   ) => {
     const active = controller.current;
     try {
@@ -125,6 +126,7 @@ export function useTelegram() {
         packet,
         models,
         active.signal,
+        discoveries,
       );
       if (!active.signal.aborted && result && result.kind !== "skipped")
         setDelivery(result);
@@ -151,6 +153,14 @@ export function useTelegram() {
     if (loaded && current.current.enabled && !demo)
       void send(current.current, packet, models);
   };
+  const notifyDiscoveries = (
+    packet: Packet,
+    alerts: DiscoveryAlert[],
+    demo: boolean,
+  ) => {
+    if (loaded && current.current.enabled && !demo)
+      void send(current.current, packet, [], alerts);
+  };
 
   return {
     settings,
@@ -164,6 +174,7 @@ export function useTelegram() {
     forget,
     test,
     notify,
+    notifyDiscoveries,
   };
 }
 

@@ -53,8 +53,19 @@ export function legacyRedirectTarget(value: unknown): string | null {
   }
 }
 
-export function storeUrl(locale: Locale, value?: string | null): string {
-  let destination = `https://marketplace.nvidia.com/${locale}/consumer/graphics-cards/?locale=${locale}&manufacturer=NVIDIA`;
+/** Direct catalog navigation; only known models receive a GPU filter. */
+export function nvidiaStoreUrl(locale: Locale, model?: Model): string {
+  const url = new URL(
+    `https://marketplace.nvidia.com/${locale}/consumer/graphics-cards/`,
+  );
+  url.searchParams.set("locale", locale);
+  url.searchParams.set("manufacturer", "NVIDIA");
+  if (model) url.searchParams.set("gpu", `RTX ${model}`);
+  return url.toString();
+}
+
+/** Return the original bytes: retailer basket URLs can contain signatures. */
+export function safeShopUrl(value?: string | null): string | null {
   if (value) {
     try {
       const url = new URL(value);
@@ -64,11 +75,16 @@ export function storeUrl(locale: Locale, value?: string | null): string {
         !url.password &&
         value.length <= 2048
       )
-        destination = value;
+        return value;
     } catch {
-      /* Fall back to the known store, never an executable URL. */
+      /* Never expose an executable or credential-bearing destination. */
     }
   }
+  return null;
+}
+
+export function storeUrl(locale: Locale, value?: string | null): string {
+  const destination = safeShopUrl(value) ?? nvidiaStoreUrl(locale);
   // Keep the original site's referrer hop for every retailer and locale.
   // Encode the complete destination once so signed basket parameters survive.
   return `https://nvidia.com.plen.io/?url=${encodeURIComponent(destination)}`;

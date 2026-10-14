@@ -1,0 +1,96 @@
+.group {
+  min-width: 0;
+}
+.headingIdentity {
+  grid-column: 1 / 4;
+}
+.heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.heading h3 svg {
+  flex-shrink: 0;
+}
+.heading p,
+.notice {
+  color: var(--secondary-ink);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.notice {
+  padding: 8px 18px;
+}
+.products {
+  max-height: 180px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.products:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -2px;
+}
+.infoNote {
+  margin-top: 8px;
+}
+.product.product {
+  min-height: 60px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  row-gap: 6px;
+}
+.product.product::before {
+  top: 8px;
+  bottom: 8px;
+}
+.identity {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.identity strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.history {
+  grid-column: 3 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.history dt {
+  color: var(--quiet);
+  font-size: 12px;
+}
+.history dd {
+  font-size: 14px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.detail {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .heading h3 {
+    font-size: 15px;
+    gap: 7px;
+  }
+  .headingIdentity {
+    grid-column: 1 / 3;
+  }
+  .notice {
+    padding: 8px 12px;
+  }
+  .identity strong {
+    font-size: 14px;
+  }
+  .history {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .badge {
+    white-space: normal;
+  }
+}
