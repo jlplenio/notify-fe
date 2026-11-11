@@ -696,6 +696,16 @@ export default function RealtimeMonitor() {
                 <p className={styles.healthDetail}>{health.detail}</p>
               )}
             </div>
+            <aside
+              className={styles.reliabilityNotice}
+              aria-label="Monitoring reliability"
+            >
+              <Info size={15} aria-hidden="true" />
+              <p>
+                Monitor health can drop anytime.{" "}
+                <strong>Always use a second, independent alert source.</strong>
+              </p>
+            </aside>
             <div className={styles.columnLabels} aria-hidden="true">
               <span>Graphics card</span>
               <span>Availability</span>

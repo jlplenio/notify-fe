@@ -414,6 +414,26 @@
   --health-signal: #dec184;
   background: #26271e;
 }
+.reliabilityNotice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 18px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(110deg, var(--subtle), var(--surface));
+  color: var(--secondary-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.reliabilityNotice > svg {
+  flex: 0 0 auto;
+}
+.reliabilityNotice strong {
+  color: var(--ink);
+  font-weight: 600;
+}
 .healthTitle {
   display: flex;
   align-items: center;
@@ -1175,6 +1195,10 @@
   }
   .healthTitle {
     font-size: 13px;
+  }
+  .reliabilityNotice {
+    margin: 8px 12px 0;
+    padding: 8px 10px;
   }
   .healthReport {
     order: 1;
