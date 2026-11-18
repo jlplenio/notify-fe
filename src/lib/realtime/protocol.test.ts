@@ -38,7 +38,7 @@ void test("monitor health is optional and validates only a bounded percentage", 
     );
 });
 
-void test("catalog evidence is optional, bounded, unique and not from the future", () => {
+void test("catalog evidence is optional, bounded, unique; slight clock skew is accepted", () => {
   const p = demoPacket("de-de", START);
   assert.equal(packetSchema.safeParse(p).success, true);
   for (const models of [[], ["5090"], ["5070", "5080", "5090"]]) {
@@ -48,8 +48,16 @@ void test("catalog evidence is optional, bounded, unique and not from the future
     });
     assert.deepEqual(parsed.catalogResult?.models, models);
   }
+  // VPS clock slightly ahead of Cloudflare must not drop the packet (and with
+  // it a simultaneous stock alert); freshness checks ignore future stamps.
+  assert.equal(
+    packetSchema.safeParse({
+      ...p,
+      catalogResult: { checkedAt: START + 500, models: ["5090"] },
+    }).success,
+    true,
+  );
   for (const result of [
-    { checkedAt: START + 1, models: ["5090"] },
     { checkedAt: -1, models: [] },
     { checkedAt: START, models: ["5090", "5090"] },
     { checkedAt: START, models: ["4090"] },

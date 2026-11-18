@@ -161,11 +161,9 @@ export const packetSchema = z
       .catch(undefined),
   })
   .superRefine((packet, ctx) => {
-    if (
-      packet.catalogResult &&
-      packet.catalogResult.checkedAt > packet.serverTime
-    )
-      ctx.addIssue({ code: "custom", message: "Future catalog observation" });
+    // A catalog time slightly ahead of serverTime (VPS clock skew) is harmless:
+    // catalog freshness checks ignore future stamps. Rejecting the whole packet
+    // here used to drop a simultaneous stock alert permanently.
     if (
       new Set(packet.models).size !== packet.models.length ||
       new Set(packet.cards.map((c) => c.model)).size !== packet.cards.length ||
