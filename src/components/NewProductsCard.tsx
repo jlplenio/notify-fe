@@ -170,17 +170,16 @@ export function NewProductsCard({
               now - product.observedAt >= 0 &&
               now - product.observedAt < (packet?.staleAfterMs ?? 60_000);
             const available = fresh && product.available === true;
-            const detail = !connected
-              ? "Updates paused"
-              : !current
-                ? "Catalog check delayed"
-                : fresh
-                  ? null
-                  : product.status === "queued"
-                    ? "Waiting for availability check"
-                    : product.status === "healthy" || product.status === "stale"
-                      ? "Status out of date"
-                      : "Availability check delayed";
+            // Group-wide states ("Updates paused", "Catalog check delayed") are
+            // shown once in the heading, not repeated on every product row.
+            const detail =
+              !connected || !current || fresh
+                ? null
+                : product.status === "queued"
+                  ? "Waiting for availability check"
+                  : product.status === "healthy" || product.status === "stale"
+                    ? "Status out of date"
+                    : "Availability check delayed";
             const stamp =
               product.lastAvailableAt ??
               (product.available === true ? product.observedAt : null);
