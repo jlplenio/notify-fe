@@ -33,6 +33,7 @@ import {
   COUNTRIES,
   DISPLAY_MODELS,
   LOCALES,
+  dropLinks,
   isLocale,
   storeUrl,
   type Locale,
@@ -328,7 +329,7 @@ export default function RealtimeMonitor() {
     at: number;
     synthetic: boolean;
     demo: boolean;
-    url: string;
+    links: { label: string; href: string }[];
     autoOpenAttempted: boolean;
   } | null>(null);
   const demo =
@@ -396,12 +397,28 @@ export default function RealtimeMonitor() {
           (url, target, features) => window.open(url, target, features),
           demo,
         ) > 0,
-      url: demo
-        ? previewStoreUrl(packet.locale, firstModel)
-        : storeUrl(
-            packet.locale,
-            packet.cards.find((c) => c.model === firstModel)?.productUrl,
-          ),
+      // Every alerted card: its direct link (when known) and the NVIDIA store
+      // filtered to that model as the fallback.
+      links: selected.flatMap((model) => {
+        const suffix = selected.length > 1 ? ` RTX ${model}` : "";
+        const { shop, store } = dropLinks(
+          packet.locale,
+          model,
+          packet.cards.find((c) => c.model === model)?.productUrl,
+        );
+        const direct = demo ? previewStoreUrl(packet.locale, model) : shop;
+        return [
+          ...(direct
+            ? [
+                {
+                  label: `${demo ? "Open demo shop" : "Open shop"}${suffix}`,
+                  href: direct,
+                },
+              ]
+            : []),
+          { label: `NVIDIA store · RTX ${model}`, href: store },
+        ];
+      }),
     });
     if (preferences.soundEnabled) void sound.play();
     telegram.notify(packet, selected, demo);
@@ -433,7 +450,17 @@ export default function RealtimeMonitor() {
         at: packet.serverTime,
         synthetic: packet.synthetic,
         demo,
-        url: storeUrl(packet.locale, products[0]?.productUrl),
+        links: (() => {
+          const { shop, store } = dropLinks(
+            packet.locale,
+            undefined,
+            products[0]?.productUrl,
+          );
+          return [
+            ...(shop ? [{ label: "Open shop", href: shop }] : []),
+            { label: "NVIDIA store", href: store },
+          ];
+        })(),
         autoOpenAttempted:
           autoOpenDiscoveryStores(
             packet,
@@ -811,22 +838,28 @@ export default function RealtimeMonitor() {
             data-testid="webshare-sponsor"
           >
             <span className={styles.sponsorKicker}>Proxy infrastructure</span>
-            <span className={styles.sponsorStatement}>
-              <span>Sponsored by</span>
-              <Image
-                className={styles.sponsorLogoLight}
-                src="/webshare-logo.svg"
-                width={229}
-                height={33}
-                alt="Webshare"
-              />
-              <Image
-                className={styles.sponsorLogoDark}
-                src="/webshare-logo-white.svg"
-                width={229}
-                height={33}
-                alt="Webshare"
-              />
+            <span className={styles.sponsorBody}>
+              <span className={styles.sponsorStatement}>
+                <span>Sponsored by</span>
+                <Image
+                  className={styles.sponsorLogoLight}
+                  src="/webshare-logo.svg"
+                  width={229}
+                  height={33}
+                  alt="Webshare"
+                />
+                <Image
+                  className={styles.sponsorLogoDark}
+                  src="/webshare-logo-white.svg"
+                  width={229}
+                  height={33}
+                  alt="Webshare"
+                />
+              </span>
+              <span className={styles.sponsorValue}>
+                Their donated proxies, worth hundreds of dollars a month, keep
+                alerts free.
+              </span>
             </span>
             <ArrowUpRight size={15} aria-hidden="true" />
           </a>
@@ -927,7 +960,7 @@ export default function RealtimeMonitor() {
                 `RTX ${lastAlert.models.join(" / ")} spotted in stock`}
             </strong>
             <p>
-              {country.name} · {relativeTime(lastAlert.at, now).toLowerCase()} ·
+              {country.name} · {relativeTime(lastAlert.at, now).toLowerCase()} ·{" "}
               {lastAlert.demo
                 ? "Demo only — no real stock or purchase."
                 : "Check the store for current availability."}
@@ -944,10 +977,18 @@ export default function RealtimeMonitor() {
                 Auto-open is skipped for test alerts.
               </p>
             )}
-            <a href={lastAlert.url} target="_blank" rel="noopener noreferrer">
-              {lastAlert.demo ? "Open demo shop" : "Open store"}{" "}
-              <ArrowUpRight size={14} />
-            </a>
+            <div className={styles.toastLinks}>
+              {lastAlert.links.map((link) => (
+                <a
+                  key={link.href + link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {link.label} <ArrowUpRight size={14} />
+                </a>
+              ))}
+            </div>
           </div>
           <button
             type="button"

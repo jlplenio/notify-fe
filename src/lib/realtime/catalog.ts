@@ -83,9 +83,31 @@ export function safeShopUrl(value?: string | null): string | null {
   return null;
 }
 
-export function storeUrl(locale: Locale, value?: string | null): string {
-  const destination = safeShopUrl(value) ?? nvidiaStoreUrl(locale);
-  // Keep the original site's referrer hop for every retailer and locale.
+/** Keep the original site's referrer hop for every retailer and locale. */
+function storeRedirect(destination: string): string {
   // Encode the complete destination once so signed basket parameters survive.
   return `https://nvidia.com.plen.io/?url=${encodeURIComponent(destination)}`;
+}
+
+/** Direct purchase link, or the NVIDIA store (filtered when a model is known). */
+export function storeUrl(
+  locale: Locale,
+  value?: string | null,
+  model?: Model,
+): string {
+  return storeRedirect(safeShopUrl(value) ?? nvidiaStoreUrl(locale, model));
+}
+
+/** Drop alerts offer both: the direct link when known and the filtered store. */
+export function dropLinks(
+  locale: Locale,
+  model?: Model,
+  productUrl?: string | null,
+): { shop: string | null; store: string } {
+  const store = nvidiaStoreUrl(locale, model);
+  const direct = safeShopUrl(productUrl);
+  return {
+    shop: direct && direct !== store ? storeRedirect(direct) : null,
+    store: storeRedirect(store),
+  };
 }

@@ -263,17 +263,23 @@ void test("all regions use generic retailer links or the regional fallback, with
     const card = packet.cards.find((c) => c.model === "5090")!;
     card.productUrl = `https://retailer.example/${locale}/basket?t=test%2Bsigned%3D`;
     const text = telegramAlertText(packet, ["5090"]);
-    const link = text.split("RTX 5090: ")[1]!;
-    assert.equal(new URL(link).searchParams.get("url"), card.productUrl);
+    const link = (label: string, body = text) =>
+      new URL(body.split(`RTX 5090 ${label}: `)[1]!.split(/\s/)[0]!);
+    assert.equal(link("shop").searchParams.get("url"), card.productUrl);
+    // The filtered NVIDIA store accompanies every direct link.
+    const store = new URL(link("NVIDIA store").searchParams.get("url")!);
+    assert.ok(store.pathname.startsWith(`/${locale}/`));
+    assert.equal(store.searchParams.get("gpu"), "RTX 5090");
     assert.ok(text.includes(`https://notify-fe.plen.io/?region=${locale}`));
     assert.ok(!text.includes(settings.token));
     card.productUrl = null;
-    assert.ok(
+    const fallback = telegramAlertText(packet, ["5090"]);
+    assert.ok(!fallback.includes("RTX 5090 shop:"));
+    assert.equal(
       new URL(
-        telegramAlertText(packet, ["5090"]).split("RTX 5090: ")[1]!,
-      ).searchParams
-        .get("url")
-        ?.includes(`/${locale}/`),
+        link("NVIDIA store", fallback).searchParams.get("url")!,
+      ).searchParams.get("gpu"),
+      "RTX 5090",
     );
     card.productUrl = `https://retailer.example/?t=${"+".repeat(1800)}`;
     const long = telegramAlertText(packet, ["5090"]);

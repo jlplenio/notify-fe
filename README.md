@@ -29,8 +29,8 @@ explicitly. If the feed is not enabled yet, the card says so.
 ### Sponsor
 
 A huge thank-you to the awesome team at **Webshare** for sponsoring our proxies.
-Their generous support makes it possible to keep Notify-FE running and stock
-alerts free for everyone.
+Their support is invaluable: it keeps Notify-FE running and stock alerts free for
+everyone.
 
 <a href="https://www.webshare.io/?referral_code=w6nfvip4qp3g">
   <picture>

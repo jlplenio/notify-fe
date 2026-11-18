@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { COUNTRIES, storeUrl, type Model } from "./catalog.ts";
+import { COUNTRIES, dropLinks, type Model } from "./catalog.ts";
 import {
   freshDiscoveryAlerts,
   type DiscoveryAlert,
@@ -159,9 +159,18 @@ export function telegramAlertText(
     if (text.length + line.length <= 4096) text += line;
   }
   for (const model of models) {
-    const link = `\n\nRTX ${model}: ${storeUrl(packet.locale, packet.cards.find((c) => c.model === model)?.productUrl)}`;
-    // Never truncate a signed checkout URL; the website link remains usable.
-    if (text.length + link.length <= 4096) text += link;
+    const { shop, store } = dropLinks(
+      packet.locale,
+      model,
+      packet.cards.find((c) => c.model === model)?.productUrl,
+    );
+    const links = shop
+      ? `\n\nRTX ${model} shop: ${shop}\nRTX ${model} NVIDIA store: ${store}`
+      : `\n\nRTX ${model} NVIDIA store: ${store}`;
+    const fallback = `\n\nRTX ${model} NVIDIA store: ${store}`;
+    // Never truncate a signed checkout URL; keep at least the filtered store.
+    if (text.length + links.length <= 4096) text += links;
+    else if (text.length + fallback.length <= 4096) text += fallback;
   }
   return text;
 }

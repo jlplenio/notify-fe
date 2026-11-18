@@ -75,7 +75,7 @@ export function autoOpenStores(
       urls.add(
         demo
           ? previewStoreUrl(packet.locale, model)
-          : storeUrl(packet.locale, card.productUrl),
+          : storeUrl(packet.locale, card.productUrl, model),
       );
   }
   for (const url of urls) {
