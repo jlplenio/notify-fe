@@ -16,6 +16,10 @@ Your preferences are saved on your device. The watchlist shows reported stock,
 last sightings and whether stock checks are working. “Last seen in stock” is
 historical; check the store for current availability. Alerts do not make purchases.
 
+**Monitor Health** shows whether enough checking capacity is available right now;
+at 100% every card can be checked on schedule. Checks can still be delayed or
+blocked, so always keep a second, independent alert source.
+
 **New NVIDIA releases** groups newly discovered listings for your country in one
 card. Its switch starts on and controls both discovery and availability alerts.
 Products remain visible with the switch off. Availability checks for these listings
@@ -120,6 +124,10 @@ Keep receipts even with notifications off or after a listing disappears. A healt
 packet can expose a revision before its event is ready, so observing a revision
 alone must not consume that event during the same connection. Older feeds may
 omit both fields.
+
+Add `monitorHealth=1` to receive a top-level `monitorHealthPercent`: an integer
+from 0 to 100, or `null` while unknown or when the monitor is offline. It
+describes checking capacity, not stock.
 
 Each discovered product may include `lastAvailableAt`: the last confirmed
 in-stock time for that product and country. It remains available after stock
